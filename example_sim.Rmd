@@ -35,13 +35,73 @@ africa.max.temp <-  crop(max.temp, extent(africa.shp))
 africa.bio <-  crop(bio, extent(africa.shp))
 africa.precip <-  crop(precip, extent(africa.shp))
 africa.alt <- crop(alt, extent(africa.shp))
+
+# Find mean values for temperature and precipitation
+africa.mean.temp.yr <- mean(africa.mean.temp)
+africa.min.temp.yr <- max(africa.max.temp)
+africa.max.temp.yr <- min(africa.min.temp)
+africa.precip.yr <- mean(africa.precip)
 ```
 
 Plot these data
 
 ```{r fig.width=7, fig.height=6}
-plot(africa.mean.temp)
+plot(africa.mean.temp.yr)
+```
+```{r fig.width=7, fig.height=6}
+plot(africa.max.temp.yr)
+```
+```{r fig.width=7, fig.height=6}
+plot(africa.min.temp.yr)
+```
+```{r fig.width=7, fig.height=6}
+plot(africa.precip.yr)
 ```
 ```{r fig.width=7, fig.height=6}
 plot(africa.alt)
+```
+
+Now we reclass the bioclimatic maps to find areas which fit into a pre-determined threshold.
+As an example we'll use:
+
+* Between 506m and 993m asl
+* Mean temperature between 23.9 and 26.5 degrees C
+* Precipitation above 10
+
+To do this we'll reclass the three maps and combine them to find the suitable and unsuitable areas in a binary map
+
+```{r}
+rcl <- matrix(c(0, 238.999,0, 238.9999, 265, 1, 256.0001, 315,0), nrow=3, ncol=3, byrow=T)
+bin.mean.temp <- reclassify(africa.mean.temp.yr, rcl)
+
+rcl <- matrix(c(-354, 505.999, 0, 505.9999, 993, 1, 993.0001, 3884,0), nrow=3, ncol=3, byrow=T)
+bin.alt <- reclassify(africa.alt, rcl)
+
+rcl <- matrix(c(0, 9.999, 0,9.9999, 365, 1), nrow=2, ncol=3, byrow=T)
+bin.precip <- reclassify(africa.precip.yr, rcl)
+
+rcl <- matrix(c(0, 2.999, 0,2.9999, 3, 1), nrow=2, ncol=3, byrow=T)
+bin.suit <- reclassify((bin.mean.temp+bin.alt+bin.precip), rcl)
+```
+
+Plot the suitable area
+
+```{r fig.width=7, fig.height=6}
+plot(bin.suit)
+```
+
+We can now take random points from the extent of Africa to be our presence and absence points for the model of suitability across Africa usinf the randomPoints() funtion in dismo. We cajn then extract the values of the predictor variables for these points.
+
+```{r}
+africa.pres <- randomPoints(bin.suit, 500)
+
+africa.data <- data.frame(presence = numeric(500), mean.temp = numeric(500), min.temp=numeric(500), max.temp=numeric(500), ppt = numeric(500), altitude=numeric(500))
+
+africa.data$presence <- extract(bin.suit, africa.pres)
+africa.data$mean.temp <- extract(africa.mean.temp.yr, africa.pres)
+africa.data$max.temp <- extract(africa.max.temp.yr, africa.pres)
+africa.data$mean.temp <- extract(africa.mean.temp.yr, africa.pres)
+africa.data$min.temp <- extract(africa.min.temp.yr, africa.pres)
+africa.data$ppt <- extract(africa.precip.yr, africa.pres)
+africa.data$altitude <- extract(africa.alt, africa.pres)
 ```
