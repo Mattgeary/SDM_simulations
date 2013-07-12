@@ -1,0 +1,47 @@
+Simulating Epidemiological distribution models
+========================================================
+
+We'll need the following packages for these simulations.
+
+```{r}
+library(maptools)
+library(sp)
+library(raster)
+library(dismo)
+library(rgdal)
+```
+
+
+First we load data for the african continent and environmental variables from WORLDCLIM. These are cropped to cover our region of interest
+
+
+```{r}
+# Read in continental outline
+africa.shp <- readShapeSpatial("africa.shp", proj4string=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
+kenya <- getData('GADM', country='KEN', level=0)
+                               
+# Read in global data
+mean.temp <- getData('worldclim', var='tmean', res=10)
+min.temp <- getData('worldclim', var='tmin', res=10)
+max.temp <- getData('worldclim', var='tmax', res=10)
+bio <- getData('worldclim', var='bio', res=10) 
+precip <-getData('worldclim', var='prec', res=10)
+alt <- getData('worldclim', var='alt', res=10)
+
+# Crop to africa extent
+africa.mean.temp <-  crop(mean.temp, extent(africa.shp))
+africa.min.temp <-  crop(min.temp, extent(africa.shp))
+africa.max.temp <-  crop(max.temp, extent(africa.shp))
+africa.bio <-  crop(bio, extent(africa.shp))
+africa.precip <-  crop(precip, extent(africa.shp))
+africa.alt <- crop(alt, extent(africa.shp))
+```
+
+Plot these data
+
+```{r fig.width=7, fig.height=6}
+plot(africa.mean.temp)
+```
+```{r fig.width=7, fig.height=6}
+plot(africa.alt)
+```
