@@ -90,18 +90,17 @@ Plot the suitable area
 plot(bin.suit)
 ```
 
-We can now take random points from the extent of Africa to be our presence and absence points for the model of suitability across Africa usinf the randomPoints() funtion in dismo. We cajn then extract the values of the predictor variables for these points.
+We can now take random points from the extent of Africa to be our presence and absence points for the model of suitability across Africa usinf the randomPoints() funtion in dismo. We can then extract the values of the predictor variables for these points.
 
 ```{r}
 africa.pres <- randomPoints(bin.suit, 500)
 
-africa.data <- data.frame(presence = numeric(500), mean.temp = numeric(500), min.temp=numeric(500), max.temp=numeric(500), ppt = numeric(500), altitude=numeric(500))
+africa.data <- data.frame(presence = numeric(500),africa.mean.temp.yr = numeric(500), africa.min.temp.yr=numeric(500),africa.max.temp.yr=numeric(500),africa.precip.yr = numeric(500), africa.alt=numeric(500))
 
 africa.data$presence <- extract(bin.suit, africa.pres)
-africa.data$mean.temp <- extract(africa.mean.temp.yr, africa.pres)
-africa.data$max.temp <- extract(africa.max.temp.yr, africa.pres)
-africa.data$mean.temp <- extract(africa.mean.temp.yr, africa.pres)
-africa.data$min.temp <- extract(africa.min.temp.yr, africa.pres)
-africa.data$ppt <- extract(africa.precip.yr, africa.pres)
-africa.data$altitude <- extract(africa.alt, africa.pres)
+africa.data$africa.mean.temp.yr <- extract(africa.mean.temp.yr, africa.pres)
+africa.data$africa.max.temp.yr <- extract(africa.max.temp.yr, africa.pres)
+africa.data$africa.min.temp.yr <- extract(africa.min.temp.yr, africa.pres)
+africa.data$africa.precip.yr <- extract(africa.precip.yr, africa.pres)
+africa.data$africa.alt <- extract(africa.alt, africa.pres)
 ```
