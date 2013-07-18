@@ -69,6 +69,12 @@ africa.max.temp <- crop(max.temp, extent(africa.shp))
 africa.bio <- crop(bio, extent(africa.shp))
 africa.precip <- crop(precip, extent(africa.shp))
 africa.alt <- crop(alt, extent(africa.shp))
+
+# Find mean values for temperature and precipitation
+africa.mean.temp.yr <- mean(africa.mean.temp)
+africa.min.temp.yr <- max(africa.max.temp)
+africa.max.temp.yr <- min(africa.min.temp)
+africa.precip.yr <- mean(africa.precip)
 ```
 
 
@@ -76,15 +82,127 @@ Plot these data
 
 
 ```r
-plot(africa.mean.temp)
+plot(africa.mean.temp.yr)
 ```
 
 ![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3.png) 
 
 
 ```r
-plot(africa.alt)
+plot(africa.max.temp.yr)
 ```
 
 ![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-4.png) 
+
+
+```r
+plot(africa.min.temp.yr)
+```
+
+![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5.png) 
+
+
+```r
+plot(africa.precip.yr)
+```
+
+![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6.png) 
+
+
+```r
+plot(africa.alt)
+```
+
+![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7.png) 
+
+
+Now we reclass the bioclimatic maps to find areas which fit into a pre-determined threshold.
+As an example we'll use:
+
+* Between 506m and 993m asl
+* Mean temperature between 23.9 and 26.5 degrees C
+* Precipitation above 10
+
+To do this we'll reclass the three maps and combine them to find the suitable and unsuitable areas in a binary map
+
+
+```r
+rcl <- matrix(c(0, 238.999, 0, 238.9999, 265, 1, 256.0001, 315, 0), nrow = 3, 
+    ncol = 3, byrow = T)
+bin.mean.temp <- reclassify(africa.mean.temp.yr, rcl)
+
+rcl <- matrix(c(-354, 505.999, 0, 505.9999, 993, 1, 993.0001, 3884, 0), nrow = 3, 
+    ncol = 3, byrow = T)
+bin.alt <- reclassify(africa.alt, rcl)
+
+rcl <- matrix(c(0, 9.999, 0, 9.9999, 365, 1), nrow = 2, ncol = 3, byrow = T)
+bin.precip <- reclassify(africa.precip.yr, rcl)
+
+rcl <- matrix(c(0, 2.999, 0, 2.9999, 3, 1), nrow = 2, ncol = 3, byrow = T)
+bin.suit <- reclassify((bin.mean.temp + bin.alt + bin.precip), rcl)
+```
+
+
+Plot the suitable area
+
+
+```r
+plot(bin.suit)
+```
+
+![plot of chunk unnamed-chunk-9](figure/unnamed-chunk-9.png) 
+
+
+We can now take random points from the extent of Africa to be our presence and absence points for the model of suitability across Africa usinf the randomPoints() funtion in dismo. We can then extract the values of the predictor variables for these points.
+
+
+```r
+africa.pres <- randomPoints(bin.suit, 500)
+
+africa.data <- data.frame(presence = numeric(500), africa.mean.temp.yr = numeric(500), 
+    africa.min.temp.yr = numeric(500), africa.max.temp.yr = numeric(500), africa.precip.yr = numeric(500), 
+    africa.alt = numeric(500))
+
+africa.data$presence <- extract(bin.suit, africa.pres)
+africa.data$africa.mean.temp.yr <- extract(africa.mean.temp.yr, africa.pres)
+africa.data$africa.max.temp.yr <- extract(africa.max.temp.yr, africa.pres)
+africa.data$africa.min.temp.yr <- extract(africa.min.temp.yr, africa.pres)
+africa.data$africa.precip.yr <- extract(africa.precip.yr, africa.pres)
+africa.data$africa.alt <- extract(africa.alt, africa.pres)
+```
+
+
+Now weed need a subset of the environmental variables to simulated a sampling excercise with limited geogrpahic area. We will use Kenya as our sampling area.
+
+
+```r
+# Crop to Kenya extent
+kenya.mean.temp <- crop(africa.mean.temp.yr, extent(kenya))
+kenya.min.temp <- crop(africa.min.temp.yr, extent(kenya))
+kenya.max.temp <- crop(africa.max.temp.yr, extent(kenya))
+kenya.bio <- crop(africa.bio, extent(kenya))
+kenya.precip <- crop(africa.precip.yr, extent(kenya))
+kenya.alt <- crop(africa.alt, extent(kenya))
+
+# Crop binary suitability map to Kenya extent
+kenya.bin <- crop(bin.suit, extent(kenya))
+
+# Take samples from kenya
+
+kenya.points <- randomPoints(kenya.bin, 100)
+kenya.pres <- cbind(kenya.points, pa = extract(kenya.bin, kenya.points))
+kenya.pres <- as.data.frame(kenya.pres)
+```
+
+Let's take a quick look at our fieldwork...
+
+```r
+plot(kenya.bin, main = "Distribution of disease in Kenya", colNA = "blue")
+symb <- kenya.pres$pa
+symb[which(symb == 1)] <- 16
+symb[which(symb == 0)] <- 1
+points(points(kenya.pres$x, kenya.pres$y, pch = symb))
+```
+
+![plot of chunk unnamed-chunk-12](figure/unnamed-chunk-12.png) 
 

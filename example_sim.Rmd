@@ -104,3 +104,33 @@ africa.data$africa.min.temp.yr <- extract(africa.min.temp.yr, africa.pres)
 africa.data$africa.precip.yr <- extract(africa.precip.yr, africa.pres)
 africa.data$africa.alt <- extract(africa.alt, africa.pres)
 ```
+
+Now weed need a subset of the environmental variables to simulated a sampling excercise with limited geogrpahic area. We will use Kenya as our sampling area.
+
+```{r}
+# Crop to Kenya extent
+kenya.mean.temp <-  crop(africa.mean.temp.yr, extent(kenya))
+kenya.min.temp <-  crop(africa.min.temp.yr, extent(kenya))
+kenya.max.temp <-  crop(africa.max.temp.yr, extent(kenya))
+kenya.bio <-  crop(africa.bio, extent(kenya))
+kenya.precip <-  crop(africa.precip.yr, extent(kenya))
+kenya.alt <- crop(africa.alt, extent(kenya))
+
+# Crop binary suitability map to Kenya extent
+kenya.bin <- crop(bin.suit, extent(kenya))
+
+# Take samples from kenya
+
+kenya.points <- randomPoints(kenya.bin, 100)
+kenya.pres<- cbind(kenya.points, pa = extract(kenya.bin, kenya.points))
+kenya.pres <- as.data.frame(kenya.pres)
+
+```
+Let's take a quick look at our fieldwork...
+```{r fig.width=7, fig.height=6}
+plot(kenya.bin, main="Distribution of disease in Kenya", colNA="blue")
+symb <- kenya.pres$pa
+symb[which(symb == 1)] <- 16 
+symb[which(symb == 0)] <- 1 
+points(points(kenya.pres$x, kenya.pres$y, pch=symb))
+```
