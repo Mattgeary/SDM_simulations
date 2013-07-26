@@ -251,17 +251,6 @@ africa.pred.map <- raster(matrix(africa.pred, nrow=nrow(africa.alt), ncol=ncol(a
 africa.pred.bin <- reclassify(africa.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
 ```
 
-We can plot these mpas to invesitgate whether the model is accurate on a continental scale and see where it gets things right/wrong...
-
-```{r fig.width=7, fig.height=8, echo=FALSE}
-oldpar <- par(mfrow=c(2,2))
-plot(africa.pred.map, main="Predicted probability of presence")
-plot(africa.pred.bin, main="Predicted binary distribution")
-plot(bin.suit, main="'Actual' binary distribution")
-plot(bin.suit - africa.pred.bin, main="Difference 'actual' and predicted distributions")
-par
-```
-
 It's also probably worth using the evaluation method from before to get an idea of the quality of these predictions.
 
 ```{r}
@@ -284,7 +273,7 @@ text(0.8,0.4, paste("AUC", round(africa.AUC, 2), sep="="))
 
 Still, just about, a 'good' model (AUC above 0.7) but this is likely to be due to the agreement of absence points in large areas of completely unsuitable parts of Africa. 
 
-We can plot these mpas to invesitgate whether the model is accurate on a continental scale and see where it gets things right/wrong...
+We can plot these maps to invesitgate whether the model is accurate on a continental scale and see where it gets things right/wrong...
 
 ```{r fig.width=7, fig.height=8, echo=FALSE}
 oldpar <- par(mfrow=c(2,2))
