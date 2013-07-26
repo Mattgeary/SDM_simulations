@@ -178,5 +178,26 @@ Plot the predicted values for Kenya
 
 ```{r}
 pred <- predict(mod.4, kenya.env, type="response")
-pred.map <- raster(matrix(pred, nrow=nrow(kenya.alt), ncol=ncol(kenya.alt), byrow=T))
-plot(pred.map)
+pred.map <- raster(matrix(pred, nrow=nrow(kenya.alt), ncol=ncol(kenya.alt), byrow=T), template=kenya.bin)
+
+```
+We can look at the the predicted presence of disease in kenya by plotting out predicted map. It might also be useful to convery our probability of presence to a binary presence/absence map and compare this to the presence/absence map we created using our threshold rules.
+
+```{r fig.width=16, fig.height=8}
+oldpar <- par(mfrow=c(1,3))
+plot(pred.map, main="Predicted probability of presence")
+pred.bin <- reclassify(pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+plot(pred.bin, main="Predicted binary distribution")
+plot(kenya.bin - pred.bin, main="Difference 'actual' and predicted distributions")
+par(oldpar)
+```{r]}
+
+# Create a dataframe for the raster data
+
+kenya.env <- data.frame(mean.temp.yr=numeric(2688), precip.yr=numeric(2688),alt=numeric(2688))
+
+kenya.env$mean.temp.yr <-values(kenya.mean.temp)
+kenya.env$precip.yr <- values(kenya.precip)
+kenya.env$alt <-values(kenya.alt)
+
+```
