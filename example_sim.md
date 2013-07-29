@@ -42,7 +42,7 @@ precip.yr <- mean(africa.precip)
 
 Plot these data
 
-![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3.png) 
+![plot of chunk EnvironmetalVariables](figure/EnvironmetalVariables.png) 
 
 
 Now we reclass the bioclimatic maps to find areas which fit into a pre-determined threshold.
@@ -74,29 +74,12 @@ bin.suit <- reclassify((bin.mean.temp + bin.alt + bin.precip), rcl)
 
 Plot the suitable area
 
-![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5.png) 
+![plot of chunk BinarySuitability](figure/BinarySuitability.png) 
 
 
-We can now take random points from the extent of Africa to be our presence and absence points for the model of suitability across Africa usinf the randomPoints() funtion in dismo. We can then extract the values of the predictor variables for these points.
+We can now take random points from the extent of Africa to be our presence and absence points for the model of suitability across Africa using the randomPoints() funtion in dismo. We can then extract the values of the predictor variables for these points.
 
-
-```r
-africa.pres <- randomPoints(bin.suit, 500)
-
-africa.data <- data.frame(presence = numeric(500), mean.temp.yr = numeric(500), 
-    min.temp.yr = numeric(500), max.temp.yr = numeric(500), precip.yr = numeric(500), 
-    africa.alt = numeric(500))
-
-africa.data$presence <- extract(bin.suit, africa.pres)
-africa.data$mean.temp.yr <- extract(mean.temp.yr, africa.pres)
-africa.data$max.temp.yr <- extract(max.temp.yr, africa.pres)
-africa.data$min.temp.yr <- extract(min.temp.yr, africa.pres)
-africa.data$precip.yr <- extract(precip.yr, africa.pres)
-africa.data$africa.alt <- extract(africa.alt, africa.pres)
-```
-
-
-Now weed need a subset of the environmental variables to simulated a sampling excercise with limited geogrpahic area. We will use Kenya as our sampling area.
+Now weed need a subset of the environmental variables to simulated a sampling excercise with limited geographic area. We will use Kenya as our sampling area.
 
 
 ```r
@@ -124,7 +107,7 @@ rm(ab)
 
 Let's take a quick look at our fieldwork...
 
-![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-8.png) 
+![plot of chunk Fieldwork](figure/Fieldwork.png) 
 
 
 Extract environmental variables from presence/absence points
@@ -159,7 +142,7 @@ mod.8 <- glm(presence ~ precip.yr * africa.alt, data = kenya.data, family = "bin
 mod.9 <- glm(presence ~ mean.temp.yr * precip.yr, data = kenya.data, family = "binomial")
 ```
 
-This is overly simplistic (ignoring spatial autocorrelation etc.) but we can find the best model here using AIC. In fact mean temperature and altitude are far too correlated, we might have to deal with this and use a different model.
+This is overly simplistic (ignoring spatial autocorrelation etc.) but we can find the best model here using AIC. In fact mean temperature and altitude are far too correlated; we might have to deal with this and use a different model.
 
 
 ```r
@@ -172,16 +155,16 @@ print(AIC.vals)
 ```
 
 ```
-##     mod   AIC d.AIC
-## 1 mod.1 269.9 187.7
-## 2 mod.2 244.0 161.8
-## 3 mod.3 273.2 191.0
-## 4 mod.4 271.2 189.0
-## 5 mod.5 244.8 162.6
-## 6 mod.6 185.2 103.0
-## 7 mod.7  82.2   0.0
-## 8 mod.8 209.4 127.2
-## 9 mod.9 185.2 103.0
+##     mod   AIC  d.AIC
+## 1 mod.1 291.2 171.19
+## 2 mod.2 265.4 145.35
+## 3 mod.3 297.0 177.01
+## 4 mod.4 290.0 170.01
+## 5 mod.5 266.0 146.04
+## 6 mod.6 190.9  70.86
+## 7 mod.7 120.0   0.00
+## 8 mod.8 217.7  97.69
+## 9 mod.9 190.9  70.86
 ```
 
 
@@ -214,7 +197,7 @@ pred.map <- raster(matrix(pred, nrow = nrow(kenya.alt), ncol = ncol(kenya.alt),
 
 We can look at the the predicted presence of disease in kenya by plotting out predicted map. It might also be useful to convery our probability of presence to a binary presence/absence map and compare this to the presence/absence map we created using our threshold rules.
 
-![plot of chunk unnamed-chunk-14](figure/unnamed-chunk-14.png) 
+![plot of chunk KenyaPredictionMaps](figure/KenyaPredictionMaps.png) 
 
 First we can test the model using some random "test points". We'll use the ROC curve and AUC to test, again for simplicity, ignoring for the moment problems with these described in the literature.
 
@@ -241,7 +224,7 @@ AUC <- performance(pred.test, "auc")@y.values[[1]]
 Now we can plot the curve and resist the temptation to "coulourize it"!  
 We'll also add the AUC to the plot for reference
 
-![plot of chunk unnamed-chunk-16](figure/unnamed-chunk-16.png) 
+![plot of chunk ROC.plot](figure/ROC.plot.png) 
 
 
 Apart from the obvious issues with the model itself, as an example the model looks good. 
@@ -287,14 +270,14 @@ africa.AUC <- performance(africa.pred.test, "auc")@y.values[[1]]
 Now we can plot the curve and resist the temptation to "coulourize it"!  
 We'll also add the AUC to the plot for reference
 
-![plot of chunk unnamed-chunk-19](figure/unnamed-chunk-19.png) 
+![plot of chunk Africa.ROC](figure/Africa.ROC.png) 
 
 
 Still, just about, a 'good' model (AUC above 0.7) but this is likely to be due to the agreement of absence points in large areas of completely unsuitable parts of Africa. 
 
 We can plot these maps to invesitgate whether the model is accurate on a continental scale and see where it gets things right/wrong...
 
-![plot of chunk unnamed-chunk-20](figure/unnamed-chunk-20.png) 
+![plot of chunk AfricaPredictionMaps](figure/AfricaPredictionMaps.png) 
 
 
 It looks like the model predicts big chunks of North Africa, a larger area in Central Africa and the coast of South Africa when they are not. This could be due to the lack of the precipitation variable in the model. It is also likely to result from using a subset of values to train the model in Kenya. 
