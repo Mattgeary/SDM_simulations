@@ -3,7 +3,7 @@ Simulating Epidemiological distribution models
 
 We'll need the following packages for these simulations.
 
-```{r echo=FALSE, include=FALSE}
+```{r libraries, echo=FALSE, include=FALSE}
 library(maptools)
 library(sp)
 library(raster)
@@ -16,7 +16,7 @@ library(ROCR)
 First we load data for the african continent and environmental variables from WORLDCLIM. These are cropped to cover our region of interest
 
 
-```{r}
+```{r data.input}
 # Read in continental outline
 africa.shp <- readShapeSpatial("africa.shp", proj4string=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
 kenya <- getData('GADM', country='KEN', level=0)
@@ -46,7 +46,7 @@ precip.yr <- mean(africa.precip)
 
 Plot these data
 
-```{r fig.width=8, fig.height=12, echo=FALSE}
+```{r EnvironmetalVariables, fig.width=8, fig.height=12, echo=FALSE}
 oldpar <- par(mfrow=c(3,2))
 plot(mean.temp.yr)
 plot(max.temp.yr)
@@ -65,7 +65,7 @@ As an example we'll use:
 
 To do this we'll reclass the three maps and combine them to find the suitable and unsuitable areas in a binary map
 
-```{r}
+```{r DiseaseRules}
 rcl <- matrix(c(0, 238.999,0, 238.9999, 265, 1, 256.0001, 315,0), nrow=3, ncol=3, byrow=T)
 bin.mean.temp <- reclassify(mean.temp.yr, rcl)
 
@@ -81,28 +81,15 @@ bin.suit <- reclassify((bin.mean.temp+bin.alt+bin.precip), rcl)
 
 Plot the suitable area
 
-```{r fig.width=7, fig.height=6, echo=FALSE}
+```{r BinarySuitability, fig.width=7, fig.height=6, echo=FALSE}
 plot(bin.suit)
 ```
 
-We can now take random points from the extent of Africa to be our presence and absence points for the model of suitability across Africa usinf the randomPoints() funtion in dismo. We can then extract the values of the predictor variables for these points.
+We can now take random points from the extent of Africa to be our presence and absence points for the model of suitability across Africa using the randomPoints() funtion in dismo. We can then extract the values of the predictor variables for these points.
 
-```{r}
-africa.pres <- randomPoints(bin.suit, 500)
+Now weed need a subset of the environmental variables to simulated a sampling excercise with limited geographic area. We will use Kenya as our sampling area.
 
-africa.data <- data.frame(presence = numeric(500),mean.temp.yr = numeric(500), min.temp.yr=numeric(500),max.temp.yr=numeric(500),precip.yr = numeric(500), africa.alt=numeric(500))
-
-africa.data$presence <- extract(bin.suit, africa.pres)
-africa.data$mean.temp.yr <- extract(mean.temp.yr, africa.pres)
-africa.data$max.temp.yr <- extract(max.temp.yr, africa.pres)
-africa.data$min.temp.yr <- extract(min.temp.yr, africa.pres)
-africa.data$precip.yr <- extract(precip.yr, africa.pres)
-africa.data$africa.alt <- extract(africa.alt, africa.pres)
-```
-
-Now weed need a subset of the environmental variables to simulated a sampling excercise with limited geogrpahic area. We will use Kenya as our sampling area.
-
-```{r}
+```{r KenyaExtent}
 # Crop to Kenya extent
 kenya.mean.temp <-  crop(mean.temp.yr, extent(kenya))
 #kenya.min.temp <-  crop(min.temp.yr, extent(kenya))
@@ -127,7 +114,7 @@ rm(ab)
 
 Let's take a quick look at our fieldwork...
 
-```{r fig.width=7, fig.height=6, echo=FALSE}
+```{r 'Fieldwork', fig.width=7, fig.height=6, echo=FALSE}
 plot(kenya.bin, main="Distribution of disease in Kenya", colNA="blue")
 symb <- kenya.pres$pa
 symb[which(symb == 1)] <- 16 
@@ -136,7 +123,7 @@ points(points(kenya.pres$x, kenya.pres$y, pch=symb))
 ```
 
 Extract environmental variables from presence/absence points
-```{r}
+```{r PresenceEnvironment}
 
 kenya.data <- data.frame(presence = numeric(length(kenya.pres$pa)),mean.temp.yr = numeric(length(kenya.pres$pa)), min.temp.yr=numeric(length(kenya.pres$pa)),max.temp.yr=numeric(length(kenya.pres$pa)),precip.yr = numeric(length(kenya.pres$pa)), africa.alt=numeric(length(kenya.pres$pa)))
 
@@ -150,7 +137,7 @@ kenya.data$africa.alt <- extract(africa.alt, kenya.pres[,1:2])
 
 Candidate models... 
 
-```{r warning=FALSE}
+```{r models, warning=FALSE}
 mod.1 <- glm(presence ~ mean.temp.yr , data=kenya.data, family="binomial")
 mod.2 <- glm(presence ~ precip.yr, data=kenya.data, family="binomial")
 mod.3 <- glm(presence ~ africa.alt, data=kenya.data, family="binomial")
@@ -161,9 +148,9 @@ mod.7 <- glm(presence ~ mean.temp.yr * africa.alt, data=kenya.data, family="bino
 mod.8 <- glm(presence ~ precip.yr * africa.alt, data=kenya.data, family="binomial")
 mod.9 <- glm(presence ~ mean.temp.yr * precip.yr, data=kenya.data, family="binomial")
 ```
-This is overly simplistic (ignoring spatial autocorrelation etc.) but we can find the best model here using AIC. In fact mean temperature and altitude are far too correlated, we might have to deal with this and use a different model.
+This is overly simplistic (ignoring spatial autocorrelation etc.) but we can find the best model here using AIC. In fact mean temperature and altitude are far too correlated; we might have to deal with this and use a different model.
 
-```{r}
+```{r AIC}
 AIC.vals <- data.frame(mod = c("mod.1", "mod.2", "mod.3", "mod.4", "mod.5", "mod.6", "mod.7", "mod.8", "mod.9"), AIC = c(AIC(mod.1), AIC(mod.2), AIC(mod.3), AIC(mod.4), AIC(mod.5), AIC(mod.6), AIC(mod.7), AIC(mod.8), AIC(mod.9)), d.AIC = numeric(9))
 AIC.vals$d.AIC <- AIC.vals$AIC -  min(AIC.vals$AIC)
 print(AIC.vals)
@@ -173,7 +160,7 @@ O.K., so for now we'll use the model using an interaction between mean temperatu
 
 To predict the distribution across Kenya we need to convert the Kenyan environmental data to a data frame
 
-```{r}
+```{r KenyaRasterData}
 
 # Create a dataframe for the raster data
 
@@ -187,14 +174,14 @@ kenya.env$africa.alt <-values(kenya.alt)
 
 Calculate the predicted values for Kenya
 
-```{r}
+```{r KenyaPrediction}
 pred <- predict(mod.7, kenya.env, type="response")
 pred.map <- raster(matrix(pred, nrow=nrow(kenya.alt), ncol=ncol(kenya.alt), byrow=T), template=kenya.bin)
 
 ```
 We can look at the the predicted presence of disease in kenya by plotting out predicted map. It might also be useful to convery our probability of presence to a binary presence/absence map and compare this to the presence/absence map we created using our threshold rules.
 
-```{r fig.width=10, fig.height=5, echo=FALSE}
+```{r KenyaPredictionMaps, fig.width=10, fig.height=5, echo=FALSE}
 oldpar <- par(mfrow=c(1,3))
 plot(pred.map, main="Predicted probability of presence")
 pred.bin <- reclassify(pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
@@ -205,14 +192,14 @@ par(oldpar)
 First we can test the model using some random "test points". We'll use the ROC curve and AUC to test, again for simplicity, ignoring for the moment problems with these described in the literature.
 
 The steps are as follows:  
-* Generate 300 random test points (_test.pts_)
-* Extract the predicted values from our model as _test.mod_
-* Extract the actual values from our binary presence/absence map of Kenya as _test.vals_
-* Use the prediction function from the ROCR package to assess the accuracy of the prediction
-* Use the performace function to calculate values for the ROC curve
-* Calculate the AUC using the perfomance function again but with different options
+* Generate 300 random test points (_test.pts_)  
+* Extract the predicted values from our model as _test.mod_  
+* Extract the actual values from our binary presence/absence map of Kenya as _test.vals_  
+* Use the prediction function from the ROCR package to assess the accuracy of the prediction  
+* Use the performance function to calculate values for the ROC curve  
+* Calculate the AUC using the performance function again but with different options  
 
-```{r}
+```{r AUC.calc}
 test.pts <- randomPoints(pred.map, 300)
 test.mod <- extract(pred.bin, test.pts)
 test.vals <- extract(kenya.bin, test.pts)
@@ -225,7 +212,7 @@ AUC <- performance(pred.test, "auc")@y.values[[1]]
 Now we can plot the curve and resist the temptation to "coulourize it"!  
 We'll also add the AUC to the plot for reference
 
-```{r fig.width=7, fig.height=6, echo=FALSE}
+```{r ROC.plot, fig.width=7, fig.height=6, echo=FALSE}
 plot(perf.test)
 text(0.8,0.4, paste("AUC", round(AUC, 2), sep="="))
 ```
@@ -234,7 +221,7 @@ Apart from the obvious issues with the model itself, as an example the model loo
 
 Now we want to project the model from Kenya onto the whole of Africa. 
 
-```{r}
+```{r AfricaRasterData}
 
 # Create a dataframe for the african raster data
 
@@ -253,7 +240,7 @@ africa.pred.bin <- reclassify(africa.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=
 
 It's also probably worth using the evaluation method from before to get an idea of the quality of these predictions.
 
-```{r}
+```{r Africa.AUC}
 africa.test.pts <- randomPoints(africa.pred.map, 300)
 africa.test.mod <- extract(africa.pred.bin, africa.test.pts)
 africa.test.vals <- extract(bin.suit, africa.test.pts)
@@ -266,7 +253,7 @@ africa.AUC <- performance(africa.pred.test, "auc")@y.values[[1]]
 Now we can plot the curve and resist the temptation to "coulourize it"!  
 We'll also add the AUC to the plot for reference
 
-```{r fig.width=7, fig.height=6, echo=FALSE}
+```{r Africa.ROC, fig.width=7, fig.height=6, echo=FALSE}
 plot(africa.perf.test)
 text(0.8,0.4, paste("AUC", round(africa.AUC, 2), sep="="))
 ```
@@ -275,7 +262,7 @@ Still, just about, a 'good' model (AUC above 0.7) but this is likely to be due t
 
 We can plot these maps to invesitgate whether the model is accurate on a continental scale and see where it gets things right/wrong...
 
-```{r fig.width=7, fig.height=8, echo=FALSE}
+```{r AfricaPredictionMaps, fig.width=7, fig.height=8, echo=FALSE}
 oldpar <- par(mfrow=c(2,2))
 plot(africa.pred.map, main="Predicted probability of presence")
 plot(africa.pred.bin, main="Predicted binary distribution")

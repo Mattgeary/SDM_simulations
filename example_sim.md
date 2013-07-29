@@ -172,16 +172,16 @@ print(AIC.vals)
 ```
 
 ```
-##     mod    AIC  d.AIC
-## 1 mod.1 238.54 144.18
-## 2 mod.2 225.92 131.56
-## 3 mod.3 241.12 146.76
-## 4 mod.4 239.72 145.36
-## 5 mod.5 227.32 132.96
-## 6 mod.6 175.56  81.20
-## 7 mod.7  94.36   0.00
-## 8 mod.8 189.22  94.86
-## 9 mod.9 175.56  81.20
+##     mod   AIC d.AIC
+## 1 mod.1 269.9 187.7
+## 2 mod.2 244.0 161.8
+## 3 mod.3 273.2 191.0
+## 4 mod.4 271.2 189.0
+## 5 mod.5 244.8 162.6
+## 6 mod.6 185.2 103.0
+## 7 mod.7  82.2   0.0
+## 8 mod.8 209.4 127.2
+## 9 mod.9 185.2 103.0
 ```
 
 
@@ -219,12 +219,12 @@ We can look at the the predicted presence of disease in kenya by plotting out pr
 First we can test the model using some random "test points". We'll use the ROC curve and AUC to test, again for simplicity, ignoring for the moment problems with these described in the literature.
 
 The steps are as follows:  
-* Generate 300 random test points (_test.pts_)
-* Extract the predicted values from our model as _test.mod_
-* Extract the actual values from our binary presence/absence map of Kenya as _test.vals_
-* Use the prediction function from the ROCR package to assess the accuracy of the prediction
-* Use the performace function to calculate values for the ROC curve
-* Calculate the AUC using the perfomance function again but with different options
+* Generate 300 random test points (_test.pts_)  
+* Extract the predicted values from our model as _test.mod_  
+* Extract the actual values from our binary presence/absence map of Kenya as _test.vals_  
+* Use the prediction function from the ROCR package to assess the accuracy of the prediction  
+* Use the performance function to calculate values for the ROC curve  
+* Calculate the AUC using the performance function again but with different options  
 
 
 ```r
@@ -270,42 +270,6 @@ africa.pred.bin <- reclassify(africa.pred.map, matrix(c(0, 0.49, 0, 0.5, 1,
 ```
 
 
-We can plot these mpas to invesitgate whether the model is accurate on a continental scale and see where it gets things right/wrong...
-
-![plot of chunk unnamed-chunk-18](figure/unnamed-chunk-18.png) 
-
-```
-## function (..., no.readonly = FALSE) 
-## {
-##     .Pars.readonly <- c("cin", "cra", "csi", "cxy", "din")
-##     single <- FALSE
-##     args <- list(...)
-##     if (!length(args)) 
-##         args <- as.list(if (no.readonly) 
-##             .Pars[-match(.Pars.readonly, .Pars)]
-##         else .Pars)
-##     else {
-##         if (all(unlist(lapply(args, is.character)))) 
-##             args <- as.list(unlist(args))
-##         if (length(args) == 1) {
-##             if (is.list(args[[1L]]) | is.null(args[[1L]])) 
-##                 args <- args[[1L]]
-##             else if (is.null(names(args))) 
-##                 single <- TRUE
-##         }
-##     }
-##     value <- .External2(C_par, args)
-##     if (single) 
-##         value <- value[[1L]]
-##     if (!is.null(names(args))) 
-##         invisible(value)
-##     else value
-## }
-## <bytecode: 0xa32d0dc>
-## <environment: namespace:graphics>
-```
-
-
 It's also probably worth using the evaluation method from before to get an idea of the quality of these predictions.
 
 
@@ -323,14 +287,14 @@ africa.AUC <- performance(africa.pred.test, "auc")@y.values[[1]]
 Now we can plot the curve and resist the temptation to "coulourize it"!  
 We'll also add the AUC to the plot for reference
 
-![plot of chunk unnamed-chunk-20](figure/unnamed-chunk-20.png) 
+![plot of chunk unnamed-chunk-19](figure/unnamed-chunk-19.png) 
 
 
 Still, just about, a 'good' model (AUC above 0.7) but this is likely to be due to the agreement of absence points in large areas of completely unsuitable parts of Africa. 
 
-We can plot these mpas to invesitgate whether the model is accurate on a continental scale and see where it gets things right/wrong...
+We can plot these maps to invesitgate whether the model is accurate on a continental scale and see where it gets things right/wrong...
 
-![plot of chunk unnamed-chunk-21](figure/unnamed-chunk-21.png) 
+![plot of chunk unnamed-chunk-20](figure/unnamed-chunk-20.png) 
 
 
 It looks like the model predicts big chunks of North Africa, a larger area in Central Africa and the coast of South Africa when they are not. This could be due to the lack of the precipitation variable in the model. It is also likely to result from using a subset of values to train the model in Kenya. 
