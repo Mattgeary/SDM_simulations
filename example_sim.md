@@ -155,16 +155,16 @@ print(AIC.vals)
 ```
 
 ```
-##     mod   AIC  d.AIC
-## 1 mod.1 291.2 171.19
-## 2 mod.2 265.4 145.35
-## 3 mod.3 297.0 177.01
-## 4 mod.4 290.0 170.01
-## 5 mod.5 266.0 146.04
-## 6 mod.6 190.9  70.86
-## 7 mod.7 120.0   0.00
-## 8 mod.8 217.7  97.69
-## 9 mod.9 190.9  70.86
+##     mod    AIC  d.AIC
+## 1 mod.1 272.86 175.21
+## 2 mod.2 253.15 155.50
+## 3 mod.3 275.96 178.31
+## 4 mod.4 273.24 175.59
+## 5 mod.5 253.27 155.62
+## 6 mod.6 176.69  79.04
+## 7 mod.7  97.65   0.00
+## 8 mod.8 211.11 113.45
+## 9 mod.9 176.69  79.04
 ```
 
 
@@ -224,7 +224,7 @@ AUC <- performance(pred.test, "auc")@y.values[[1]]
 Now we can plot the curve and resist the temptation to "coulourize it"!  
 We'll also add the AUC to the plot for reference
 
-![plot of chunk ROC.plot](figure/ROC.plot.png) 
+![plot of chunk ROCplot](figure/ROCplot.png) 
 
 
 Apart from the obvious issues with the model itself, as an example the model looks good. 
@@ -270,7 +270,7 @@ africa.AUC <- performance(africa.pred.test, "auc")@y.values[[1]]
 Now we can plot the curve and resist the temptation to "coulourize it"!  
 We'll also add the AUC to the plot for reference
 
-![plot of chunk Africa.ROC](figure/Africa.ROC.png) 
+![plot of chunk AfricaROC](figure/AfricaROC.png) 
 
 
 Still, just about, a 'good' model (AUC above 0.7) but this is likely to be due to the agreement of absence points in large areas of completely unsuitable parts of Africa. 
