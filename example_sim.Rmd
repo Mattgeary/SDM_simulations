@@ -212,7 +212,7 @@ AUC <- performance(pred.test, "auc")@y.values[[1]]
 Now we can plot the curve and resist the temptation to "coulourize it"!  
 We'll also add the AUC to the plot for reference
 
-```{r ROC.plot, fig.width=7, fig.height=6, echo=FALSE}
+```{r ROCplot, fig.width=7, fig.height=6, echo=FALSE}
 plot(perf.test)
 text(0.8,0.4, paste("AUC", round(AUC, 2), sep="="))
 ```
@@ -253,7 +253,7 @@ africa.AUC <- performance(africa.pred.test, "auc")@y.values[[1]]
 Now we can plot the curve and resist the temptation to "coulourize it"!  
 We'll also add the AUC to the plot for reference
 
-```{r Africa.ROC, fig.width=7, fig.height=6, echo=FALSE}
+```{r AfricaROC, fig.width=7, fig.height=6, echo=FALSE}
 plot(africa.perf.test)
 text(0.8,0.4, paste("AUC", round(africa.AUC, 2), sep="="))
 ```
