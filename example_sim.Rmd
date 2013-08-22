@@ -1,4 +1,4 @@
-Simulating Epidemiological distribution models
+Simulating Epidemiological distribution models (Example)
 ========================================================
 
 We'll need the following packages for these simulations.
