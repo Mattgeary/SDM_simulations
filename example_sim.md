@@ -48,19 +48,19 @@ Plot these data
 Now we reclass the bioclimatic maps to find areas which fit into a pre-determined threshold.
 As an example we'll use:
 
-* Between 506m and 993m asl
-* Mean temperature between 23.9 and 26.5 degrees C
+* Between 150m and 993m asl
+* Mean temperature between 19.0 and 26.5 degrees C
 * Precipitation above 10
 
 To do this we'll reclass the three maps and combine them to find the suitable and unsuitable areas in a binary map
 
 
 ```r
-rcl <- matrix(c(0, 238.999, 0, 238.9999, 265, 1, 256.0001, 315, 0), nrow = 3, 
+rcl <- matrix(c(0, 198.999, 0, 198.9999, 265, 1, 256.0001, 315, 0), nrow = 3, 
     ncol = 3, byrow = T)
 bin.mean.temp <- reclassify(mean.temp.yr, rcl)
 
-rcl <- matrix(c(-354, 505.999, 0, 505.9999, 993, 1, 993.0001, 3884, 0), nrow = 3, 
+rcl <- matrix(c(-354, 149.999, 0, 149.9999, 993, 1, 993.0001, 3884, 0), nrow = 3, 
     ncol = 3, byrow = T)
 bin.alt <- reclassify(africa.alt, rcl)
 
@@ -127,6 +127,12 @@ kenya.data$africa.alt <- extract(africa.alt, kenya.pres[, 1:2])
 ```
 
 
+We need to check for autocorrelation among our predictor variables. A pairs plot should help.
+
+![plot of chunk pairs](figure/pairs.png) 
+
+It looks like the only coorelation below 0.7 is altitude and precipitation. We probably shouldn't be using mean temperature and altitude together, anyway.
+
 Candidate models... 
 
 
@@ -142,7 +148,7 @@ mod.8 <- glm(presence ~ precip.yr * africa.alt, data = kenya.data, family = "bin
 mod.9 <- glm(presence ~ mean.temp.yr * precip.yr, data = kenya.data, family = "binomial")
 ```
 
-This is overly simplistic (ignoring spatial autocorrelation etc.) but we can find the best model here using AIC. In fact mean temperature and altitude are far too correlated; we might have to deal with this and use a different model.
+This is overly simplistic (ignoring spatial autocorrelation etc.) but we can find the best model here using AIC. In fact mean temperature and altitude are far too correlated; we might have to deal with this and use a different model. We will remove the models using a combination of these variables from the delta AIC calculation.
 
 
 ```r
@@ -150,25 +156,24 @@ AIC.vals <- data.frame(mod = c("mod.1", "mod.2", "mod.3", "mod.4", "mod.5",
     "mod.6", "mod.7", "mod.8", "mod.9"), AIC = c(AIC(mod.1), AIC(mod.2), AIC(mod.3), 
     AIC(mod.4), AIC(mod.5), AIC(mod.6), AIC(mod.7), AIC(mod.8), AIC(mod.9)), 
     d.AIC = numeric(9))
+AIC.vals <- AIC.vals[-c(4, 7), ]
 AIC.vals$d.AIC <- AIC.vals$AIC - min(AIC.vals$AIC)
 print(AIC.vals)
 ```
 
 ```
-##     mod    AIC  d.AIC
-## 1 mod.1 272.86 175.21
-## 2 mod.2 253.15 155.50
-## 3 mod.3 275.96 178.31
-## 4 mod.4 273.24 175.59
-## 5 mod.5 253.27 155.62
-## 6 mod.6 176.69  79.04
-## 7 mod.7  97.65   0.00
-## 8 mod.8 211.11 113.45
-## 9 mod.9 176.69  79.04
+##     mod   AIC  d.AIC
+## 1 mod.1 385.3 100.38
+## 2 mod.2 383.8  98.82
+## 3 mod.3 376.1  91.13
+## 5 mod.5 377.2  92.29
+## 6 mod.6 294.3   9.37
+## 8 mod.8 285.0   0.00
+## 9 mod.9 294.3   9.37
 ```
 
 
-O.K., so for now we'll use the model using an interaction between mean temperature and altitude (ignoring the problems for the sake of example).
+O.K., so for now we'll use the model using an interaction between precipitation and altitude - the modelwith the lowest AIC score as all other have d.AIC > 2.
 
 To predict the distribution across Kenya we need to convert the Kenyan environmental data to a data frame
 
@@ -190,7 +195,7 @@ Calculate the predicted values for Kenya
 
 
 ```r
-pred <- predict(mod.7, kenya.env, type = "response")
+pred <- predict(mod.8, kenya.env, type = "response")
 pred.map <- raster(matrix(pred, nrow = nrow(kenya.alt), ncol = ncol(kenya.alt), 
     byrow = T), template = kenya.bin)
 ```
@@ -245,7 +250,7 @@ africa.env$africa.alt <- values(africa.alt)
 
 # Predict values from our model and binary prediction map
 
-africa.pred <- predict(mod.7, africa.env, type = "response")
+africa.pred <- predict(mod.8, africa.env, type = "response")
 africa.pred.map <- raster(matrix(africa.pred, nrow = nrow(africa.alt), ncol = ncol(africa.alt), 
     byrow = T), template = bin.suit)
 africa.pred.bin <- reclassify(africa.pred.map, matrix(c(0, 0.49, 0, 0.5, 1, 
@@ -280,4 +285,4 @@ We can plot these maps to invesitgate whether the model is accurate on a contine
 ![plot of chunk AfricaPredictionMaps](figure/AfricaPredictionMaps.png) 
 
 
-It looks like the model predicts big chunks of North Africa, a larger area in Central Africa and the coast of South Africa when they are not. This could be due to the lack of the precipitation variable in the model. It is also likely to result from using a subset of values to train the model in Kenya. 
+It looks like the model predicts big chunks of North Africa, a larger area in Central Africa and the coast of South Africa when they are not. This could be due to using only a couple of variables in the model. It is also likely to result from using a subset of values to train the model in Kenya. 
