@@ -416,28 +416,192 @@ comb.env$africa.alt <-values(comb.alt)
 full.pred <- predict(full.mod.4, africa.env, type="response")
 full.pred.map <- raster(matrix(full.pred, nrow=nrow(africa.alt), ncol=ncol(africa.alt), byrow=T), template=bin.suit)
 full.pred.bin <- reclassify(full.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+# Kenya prediction
+full.pred.kenya <- predict(full.mod.4, kenya.env, type="response")
+full.pred.map.kenya <- raster(matrix(full.pred.kenya, nrow=nrow(kenya.alt), ncol=ncol(kenya.alt), byrow=T), template=kenya.bin)
+full.pred.bin.kenya <- reclassify(full.pred.map.kenya, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+# Combined Kenya and Tanzania
+full.pred.comb <- predict(full.mod.4, comb.env, type="response")
+full.pred.map.comb <- raster(matrix(full.pred.comb, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.bin)
+full.pred.bin.comb <- reclassify(full.pred.map.comb, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
 
 # Heterogenous sampling
 # African prediction
 hetero.pred <- predict(hetero.mod.4, africa.env, type="response")
 hetero.pred.map <- raster(matrix(hetero.pred, nrow=nrow(africa.alt), ncol=ncol(africa.alt), byrow=T), template=bin.suit)
 hetero.pred.bin <- reclassify(hetero.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+# Kenya prediction
+hetero.pred.kenya <- predict(hetero.mod.4, kenya.env, type="response")
+hetero.pred.map.kenya <- raster(matrix(hetero.pred.kenya, nrow=nrow(kenya.alt), ncol=ncol(kenya.alt), byrow=T), template=kenya.bin)
+hetero.pred.bin.kenya <- reclassify(hetero.pred.map.kenya, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+# Combined Kenya and Tanzania
+hetero.pred.comb <- predict(hetero.mod.4, comb.env, type="response")
+hetero.pred.map.comb <- raster(matrix(hetero.pred.comb, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.bin)
+hetero.pred.bin.comb <- reclassify(hetero.pred.map.comb, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
 
 # Missing covariates
 # African prediction
 missing.pred <- predict(missing.mod.3, africa.env, type="response")
 missing.pred.map <- raster(matrix(missing.pred, nrow=nrow(africa.alt), ncol=ncol(africa.alt), byrow=T), template=bin.suit)
 missing.pred.bin <- reclassify(missing.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+# Kenya prediction
+missing.pred.kenya <- predict(missing.mod.4, kenya.env, type="response")
+missing.pred.map.kenya <- raster(matrix(missing.pred.kenya, nrow=nrow(kenya.alt), ncol=ncol(kenya.alt), byrow=T), template=kenya.bin)
+missing.pred.bin.kenya <- reclassify(missing.pred.map.kenya, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+# Combined Kenya and Tanzania
+missing.pred.comb <- predict(missing.mod.4, comb.env, type="response")
+missing.pred.map.comb <- raster(matrix(missing.pred.comb, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.bin)
+missing.pred.bin.comb <- reclassify(missing.pred.map.comb, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
 
 # Disease spreading
 # Africa prediction
 spread.pred <- predict(spread.mod.4, africa.env, type="response")
 spread.pred.map <- raster(matrix(spread.pred, nrow=nrow(africa.alt), ncol=ncol(africa.alt), byrow=T), template=bin.suit)
 spread.pred.bin <- reclassify(spread.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+# Kenya prediction
+spread.pred.kenya <- predict(spread.mod.4, kenya.env, type="response")
+spread.pred.map.kenya <- raster(matrix(spread.pred.kenya, nrow=nrow(kenya.alt), ncol=ncol(kenya.alt), byrow=T), template=kenya.bin)
+spread.pred.bin.kenya <- reclassify(spread.pred.map.kenya, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+# Combined Kenya and Tanzania
+spread.pred.comb <- predict(spread.mod.4, comb.env, type="response")
+spread.pred.map.comb <- raster(matrix(spread.pred.comb, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.bin)
+spread.pred.bin.comb <- reclassify(spread.pred.map.comb, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
 
 # Control programme
 # African prediction
 control.pred <- predict(control.mod.4, africa.env, type="response")
 control.pred.map <- raster(matrix(control.pred, nrow=nrow(africa.alt), ncol=ncol(africa.alt), byrow=T), template=bin.suit)
 control.pred.bin <- reclassify(control.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+# Kenya prediction
+control.pred.kenya <- predict(control.mod.4, kenya.env, type="response")
+control.pred.map.kenya <- raster(matrix(control.pred.kenya, nrow=nrow(kenya.alt), ncol=ncol(kenya.alt), byrow=T), template=kenya.bin)
+control.pred.bin.kenya <- reclassify(control.pred.map.kenya, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+# Combined Kenya and Tanzania
+control.pred.comb <- predict(control.mod.4, comb.env, type="response")
+control.pred.map.comb <- raster(matrix(control.pred.comb, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.bin)
+control.pred.bin.comb <- reclassify(control.pred.map.comb, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+```
+
+Model evaluation is an important step in distribution modelling. In terms of prediction this should probably involve calculating more than one metric for evauluation but in this case, we will use one as we know the full distribution of the disease and have the luxury of being able to use random samples from the known distribution for testing rather than a subset of collected data. The receiver operating characteristic curve plots the rate of true positive results versus false positive. The area under this curve (AUC) provides a single value which represents the predictive performance of the model. The value is between 0 and 1 and bvalues above 0.5 represent better than random predictions with values over 0.7 conidered to indicate a "good" predictive model. The use of AUC values has been criticised in the literature recently but nevertheless is a commonly used method of model evaluation in the ecological literature (Fielding and Bell 1997). In each case the models are tested for predictive accuracy by converting their predictions into binary values (present or absent) and testing these against the true values for 1000 randomly selected points across Africa.
+
+ROC curves and AUC scores for these modelling scenarios (Figure 4) suggest that the best performing model in this case is the _heterogenous sampling effort_ scenarios, however, this is only slightly better than the _full information_ scenario. The worst perfroming model by AUC score is the _control programme_ scenario which performs worse than random. However, the _missing covariates_ model only has an AUC of 0.5 becasue it produced no positive predictions (i.e. true positives = true negatives = 0).
+
+```{r AUC, , echo=FALSE,  include=FALSE}
+# Full information
+full.test.pts <- randomPoints(full.pred.map, 1000)
+full.test.mod <- extract(full.pred.bin, full.test.pts)
+full.test.vals <- extract(bin.suit, full.test.pts)
+
+full.pred.test <- prediction(full.test.mod, full.test.vals)
+full.perf.test <- performance(full.pred.test, "tpr","fpr")
+full.AUC <- performance(full.pred.test, "auc")@y.values[[1]]
+
+# Heterogenous sampling effort
+hetero.test.pts <- randomPoints(hetero.pred.map, 1000)
+hetero.test.mod <- extract(hetero.pred.bin, hetero.test.pts)
+hetero.test.vals <- extract(bin.suit, hetero.test.pts)
+
+hetero.pred.test <- prediction(hetero.test.mod, hetero.test.vals)
+hetero.perf.test <- performance(hetero.pred.test, "tpr","fpr")
+hetero.AUC <- performance(hetero.pred.test, "auc")@y.values[[1]]
+
+# Missing covariates
+missing.test.pts <- randomPoints(missing.pred.map, 1000)
+missing.test.mod <- extract(missing.pred.bin, missing.test.pts)
+missing.test.vals <- extract(bin.suit, missing.test.pts)
+
+missing.pred.test <- prediction(missing.test.mod, missing.test.vals)
+missing.perf.test <- performance(missing.pred.test, "tpr","fpr")
+missing.AUC <- performance(missing.pred.test, "auc")@y.values[[1]]
+
+# Disease spreading
+spread.test.pts <- randomPoints(spread.pred.map, 1000)
+spread.test.mod <- extract(spread.pred.bin, spread.test.pts)
+spread.test.vals <- extract(bin.suit, spread.test.pts)
+
+spread.pred.test <- prediction(spread.test.mod, spread.test.vals)
+spread.perf.test <- performance(spread.pred.test, "tpr","fpr")
+spread.AUC <- performance(spread.pred.test, "auc")@y.values[[1]]
+
+# Control programme
+control.test.pts <- randomPoints(control.pred.map, 1000)
+control.test.mod <- extract(control.pred.bin, control.test.pts)
+control.test.vals <- extract(bin.suit, control.test.pts)
+
+control.pred.test <- prediction(control.test.mod, control.test.vals)
+control.perf.test <- performance(control.pred.test, "tpr","fpr")
+control.AUC <- performance(control.pred.test, "auc")@y.values[[1]]
+```
+
+```{r ROC, fig.width=12, fig.height=12, echo=FALSE, fig.cap="ROC curves for each modelling scenarios with AUC values given on each plot" }
+oldpar <- par(mfrow=c(3,2))
+plot(full.perf.test, main="Full information")
+text(0.8,0.4, paste("AUC", round(full.AUC, 2), sep="="))
+plot(hetero.perf.test, main="Heterogenous sampling effort")
+text(0.8,0.4, paste("AUC", round(hetero.AUC, 2), sep="="))
+plot(missing.perf.test, main="Missing covariates")
+text(0.8,0.4, paste("AUC", round(missing.AUC, 2), sep="="))
+plot(spread.perf.test, main="Disease spreading")
+text(0.8,0.4, paste("AUC", round(spread.AUC, 2), sep="="))
+plot(control.perf.test, main="Control programme")
+text(0.8,0.4, paste("AUC", round(control.AUC, 2), sep="="))
+par(oldpar)
+```
+
+
+By projecting the models onto data for the whole of Africa we can visually assess the performance of these models compared to the true distribution of the virtual disease (Figure 5). One feature of note is that the _missing covariates_ model predicts a noticeably lower probability of presence and for a much wioder area than the other models. Also the model representing a _control programme_ predicts a very low probability of presence in central Africa where we know the disease to be present. The model using _full information_ predicts a wider area than the true distribution of the model to have a high proabability of presence. This could be due to the lqack of temeprature based predictors iin the model of becuse, as precipitation has a threshold over which it is suitable, the model would be imporved with the inclusion of nonlinear relationships. The _heterogenous sampling effort_ model predicts a similar shaped area to the full information model but with a higher probability of presence outside of the true distribution. The _disease spreading_ model predicts apatchy distribution covering some of the areas where the disease is known to be present but several further areas where the disease is absent including north Africa and the middle east. 
+
+```{r ProbabilityPres, fig.width=12, fig.height=12, echo=FALSE, fig.cap = "Predicted probability of disease presence across Africa for each of the modelling scenarios"}
+oldpar <- par(mfrow=c(3,2))
+plot(bin.suit, main="True disease distribution")
+plot(full.pred.map, main="Full information")
+plot(hetero.pred.map, main="Heterogenous sampling effort")
+plot(missing.pred.map, main="Missing covariates")
+plot(spread.pred.map, main="Disease spreading")
+plot(control.pred.map, main="Control programme")
+par(oldpar)
+```
+
+Converting these  to binary predictions shows where these models predict the disease to be present or absent (Figure 6). The _full information_ model is broad in its predictions in central and west africa and misses some of the peripheral areas where the disease is present.  The _heterogenous sampling effort_ model is similar in this regard. The _missing covariates_ model cannot predict any areas of presence and perfromas the worst out of all the scenarios. The _disease spreading_ model predicts several areas where the disease is present but also patches such as the west of of southern Africa wjich are, in fact, unsuitable. The _control programme_ model performs poorly and predicts large areas which are unsuitable for the disease as present along with much of the true distribution as absent.
+
+```{r BinaryPres, fig.width=12, fig.height=12, echo=FALSE, fig.cap = "Predicted presence/absence of the virtual disease across Africa for each of the modelling scenarios"}
+oldpar <- par(mfrow=c(3,2))
+plot(bin.suit, main="True disease distribution")
+plot(full.pred.bin, main="Full information")
+plot(hetero.pred.bin, main="Heterogenous sampling effort")
+plot(missing.pred.bin, main="Missing covariates")
+plot(spread.pred.bin, main="Disease spreading")
+plot(control.pred.bin, main="Control programme")
+par(oldpar)
+```
+
+As some of these models were fitted to data from a restricted geopgraphic area it is also worthwile in inspecting and comparing theri performances across Kenya and the combined Kenya and Tanzania area (Fig 7). 
+
+```{r RestrictedPres, fig.width=12, fig.height=12, echo=FALSE, fig.cap = "Predicted probability of presence and presence/absence of the virtual disease acrossKenya and the combined Kenya and Tanzania area for each of the modelling scenarios"}
+oldpar <- par(mfrow=c(6,4))
+plot(full.pres[,1:2], type="n", xlab="", ylab="", xaxt="n", yaxt="n", bty="n")
+plot(kenya.bin, main="True Kenyan disease distribution")
+plot(full.pres[,1:2], type="n", xlab="", ylab="", xaxt="n", yaxt="n", bty="n")
+plot(comb.bin, main="True Kenyan and Tanzania disease distribution")
+plot(full.pred.map.kenya, main="Full information -\nProbability of presence in Kenya")
+plot(full.pred.bin.kenya, main="Full information -\nPresence/absence in Kenya")
+plot(full.pred.map.comb, main="Full information -\nProbability of presence in Kenya and Tanzania")
+plot(full.pred.bin.comb, main="Full information -\nPresence/absence in Kenya and Tanzania")
+plot(hetero.pred.map.kenya, main="Heterogenous sampling effort -\nProbability of presence in Kenya")
+plot(hetero.pred.bin.kenya, main="Heterogenous sampling effort -\nPresence/absence in Kenya")
+plot(hetero.pred.map.comb, main="Heterogenous sampling effort -\nProbability of presence in Kenya and Tanzania")
+plot(hetero.pred.bin.comb, main="Heterogenous sampling effort -\nPresence/absence in Kenya and Tanzania")
+plot(missing.pred.map.kenya, main="Missing covariate -\nProbability of presence in Kenya")
+plot(missing.pred.bin.kenya, main="Missing covariate -\nPresence/absence in Kenya")
+plot(missing.pred.map.comb, main="Missing covariate -\nProbability of presence in Kenya and Tanzania")
+plot(missing.pred.bin.comb, main="Missing covariate -\nPresence/absence in Kenya and Tanzania")
+plot(spread.pred.map.kenya, main="Disease spreading -\nProbability of presence in Kenya")
+plot(spread.pred.bin.kenya, main="Disease spreading -\nPresence/absence in Kenya")
+plot(spread.pred.map.comb, main="Disease spreading -\nProbability of presence in Kenya and Tanzania")
+plot(spread.pred.bin.comb, main="Disease spreading -\nPresence/absence in Kenya and Tanzania")
+plot(control.pred.map.kenya, main="Control programme -\nProbability of presence in Kenya")
+plot(control.pred.bin.kenya, main="Control programme -\nPresence/absence in Kenya")
+plot(control.pred.map.comb, main="Control programme -\nProbability of presence in Kenya and Tanzania")
+plot(control.pred.bin.comb, main="Control programme -\nPresence/absence in Kenya and Tanzania")
+par(oldpar)
 ```
