@@ -11,7 +11,7 @@ The folling demonstrates the potential pitfalls in modelling disease distributio
 
 * Between 150m and 993m asl
 * Mean temperature between 19.0 and 26.5 degrees C
-* Precipitation above 10
+* Precipitation above 10 and below 200
 
 
 
@@ -108,4 +108,22 @@ Converting these  to binary predictions shows where these models predict the dis
 As some of these models were fitted to data from a restricted geopgraphic area it is also worthwile in inspecting and comparing theri performances across Kenya and the combined Kenya and Tanzania area (Fig 7). 
 
 ![Predicted probability of presence and presence/absence of the virtual disease acrossKenya and the combined Kenya and Tanzania area for each of the modelling scenarios](figure/RestrictedPres.png) 
+
+
+The results of these projections are based on randomly placed points so there is the potential for variations in the modelling outcomes fo each scenario. To investigate the variability in these results and compare across scenarios the models are repeated 100 times each and assessed in terms of AUC azlong with the proportion of the study area correct, the proportion of false negative produced and the proportion of false positives.
+
+
+
+
+
+
+
+
+![Results of 100 simulations for the five scenarios showing (a) Proportion of the study area correct, (b) AUC scores, (c) proportion of false positives and (d) proportion of false negatives across Africa](figure/iterationplotafrica.png) 
+
+
+![Results of 100 simulations for the five scenarios showing (a) Proportion of the study area correct, (b) AUC scores, (c) proportion of false positives and (d) proportion of false negatives across Kenya](figure/iterationplotkenya.png) 
+
+
+![Results of 100 simulations for the five scenarios showing (a) Proportion of the study area correct, (b) AUC scores, (c) proportion of false positives and (d) proportion of false negatives across a the combined extent of Kenya and Tanzania](figure/iterationplotcomb.png) 
 

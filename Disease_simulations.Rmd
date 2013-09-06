@@ -45,7 +45,7 @@ The folling demonstrates the potential pitfalls in modelling disease distributio
 
 * Between 150m and 993m asl
 * Mean temperature between 19.0 and 26.5 degrees C
-* Precipitation above 10
+* Precipitation above 10 and below 200
 
 ```{r DiseaseRules, echo=FALSE, include=FALSE}
 rcl <- matrix(c(0, 198.999,0, 198.9999, 265, 1, 256.0001, 315,0), nrow=3, ncol=3, byrow=T)
@@ -54,11 +54,13 @@ bin.mean.temp <- reclassify(mean.temp.yr, rcl)
 rcl <- matrix(c(-354, 149.999, 0, 149.9999, 993, 1, 993.0001, 3884,0), nrow=3, ncol=3, byrow=T)
 bin.alt <- reclassify(africa.alt, rcl)
 
-rcl <- matrix(c(0, 9.999, 0,9.9999, 365, 1), nrow=2, ncol=3, byrow=T)
+rcl <- matrix(c(0, 9.999, 0,9.9999, 200.0001, 1, 200.0002, 365, 0), nrow=3, ncol=3, byrow=T)
 bin.precip <- reclassify(precip.yr, rcl)
 
 rcl <- matrix(c(0, 2.999, 0,2.9999, 3, 1), nrow=2, ncol=3, byrow=T)
 bin.suit <- reclassify((bin.mean.temp+bin.alt+bin.precip), rcl)
+kenya.suit <- crop(bin.suit, extent(kenya))
+comb.suit <- crop(bin.suit, extent(c(29.32717, 41.88752, -11.74569,  4.633819)))
 ```
 
 ```{r BinarySuitability, fig.width=7, fig.height=6, echo=FALSE, fig.cap = "Suitable area for the virtual disease in africa"}
@@ -154,7 +156,7 @@ hetero.pres.africa <- cbind(hetero.pts.africa, pa = extract(bin.suit, hetero.pts
 hetero.pres.africa <- as.data.frame(hetero.pres.africa)
 ab <- which(hetero.pres.africa$pa == 0)
 hetero.pres.africa <- hetero.pres.africa[-c(sample(ab, length(ab)*0.6)),]
-hetero.pres.africa <- hetero.pres.africa[sample(c(1:length(hetero.pres.africa[,1])), 150),]
+hetero.pres.africa <- hetero.pres.africa[sample(c(1:length(hetero.pres.africa[,1])), 100),]
 rm(ab)
 # Take additional points from Kenya and add to data.frame
 hetero.pts.kenya <- randomPoints(kenya.bin, 1000)
@@ -162,7 +164,7 @@ hetero.pres.kenya <- cbind(hetero.pts.kenya, pa = extract(kenya.bin, hetero.pts.
 hetero.pres.kenya <- as.data.frame(hetero.pres.kenya)
 ab <- which(hetero.pres.kenya$pa == 0)
 hetero.pres.kenya <- hetero.pres.kenya[-c(sample(ab, length(ab)*0.6)),]
-hetero.pres.kenya <- hetero.pres.kenya[sample(c(1:length(hetero.pres.kenya[,1])), 150),]
+hetero.pres.kenya <- hetero.pres.kenya[sample(c(1:length(hetero.pres.kenya[,1])), 200),]
 hetero.pres <- rbind(hetero.pres.africa, hetero.pres.kenya)
 rm(ab)
 
@@ -445,11 +447,11 @@ missing.pred <- predict(missing.mod.3, africa.env, type="response")
 missing.pred.map <- raster(matrix(missing.pred, nrow=nrow(africa.alt), ncol=ncol(africa.alt), byrow=T), template=bin.suit)
 missing.pred.bin <- reclassify(missing.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
 # Kenya prediction
-missing.pred.kenya <- predict(missing.mod.4, kenya.env, type="response")
+missing.pred.kenya <- predict(missing.mod.3, kenya.env, type="response")
 missing.pred.map.kenya <- raster(matrix(missing.pred.kenya, nrow=nrow(kenya.alt), ncol=ncol(kenya.alt), byrow=T), template=kenya.bin)
 missing.pred.bin.kenya <- reclassify(missing.pred.map.kenya, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
 # Combined Kenya and Tanzania
-missing.pred.comb <- predict(missing.mod.4, comb.env, type="response")
+missing.pred.comb <- predict(missing.mod.3, comb.env, type="response")
 missing.pred.map.comb <- raster(matrix(missing.pred.comb, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.bin)
 missing.pred.bin.comb <- reclassify(missing.pred.map.comb, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
 
@@ -486,7 +488,7 @@ Model evaluation is an important step in distribution modelling. In terms of pre
 
 ROC curves and AUC scores for these modelling scenarios (Figure 4) suggest that the best performing model in this case is the _heterogenous sampling effort_ scenarios, however, this is only slightly better than the _full information_ scenario. The worst perfroming model by AUC score is the _control programme_ scenario which performs worse than random. However, the _missing covariates_ model only has an AUC of 0.5 becasue it produced no positive predictions (i.e. true positives = true negatives = 0).
 
-```{r AUC, , echo=FALSE,  include=FALSE}
+```{r AUC, echo=FALSE,  include=FALSE}
 # Full information
 full.test.pts <- randomPoints(full.pred.map, 1000)
 full.test.mod <- extract(full.pred.bin, full.test.pts)
@@ -604,4 +606,494 @@ plot(control.pred.bin.kenya, main="Control programme -\nPresence/absence in Keny
 plot(control.pred.map.comb, main="Control programme -\nProbability of presence in Kenya and Tanzania")
 plot(control.pred.bin.comb, main="Control programme -\nPresence/absence in Kenya and Tanzania")
 par(oldpar)
+```
+
+The results of these projections are based on randomly placed points so there is the potential for variations in the modelling outcomes fo each scenario. To investigate the variability in these results and compare across scenarios the models are repeated 100 times each and assessed in terms of AUC azlong with the proportion of the study area correct, the proportion of false negative produced and the proportion of false positives.
+
+
+```{r, Iterations, echo=FALSE,  include=FALSE}
+runs <- 10
+
+sim.results <- data.frame(full.area=numeric(runs), full.AUC = numeric(runs), hetero.area=numeric(runs), hetero.AUC = numeric(runs), missing.area=numeric(runs), missing.AUC = numeric(runs), spread.area = numeric(runs), spread.AUC = numeric(runs), control.area = numeric(runs), control.AUC = numeric(runs))
+
+sim.wrong <-  data.frame(full.false.positive=numeric(runs), full.false.negative = numeric(runs), hetero.false.positive=numeric(runs), hetero.false.negative = numeric(runs), missing.false.positive=numeric(runs), missing.false.negative = numeric(runs), spread.false.positive = numeric(runs), spread.false.negative = numeric(runs), control.false.positive = numeric(runs), control.false.negative = numeric(runs))
+
+kenya.results <- data.frame(full.area=numeric(runs), full.AUC = numeric(runs), hetero.area=numeric(runs), hetero.AUC = numeric(runs), missing.area=numeric(runs), missing.AUC = numeric(runs), spread.area = numeric(runs), spread.AUC = numeric(runs), control.area = numeric(runs), control.AUC = numeric(runs))
+
+kenya.wrong <-  data.frame(full.false.positive=numeric(runs), full.false.negative = numeric(runs), hetero.false.positive=numeric(runs), hetero.false.negative = numeric(runs), missing.false.positive=numeric(runs), missing.false.negative = numeric(runs), spread.false.positive = numeric(runs), spread.false.negative = numeric(runs), control.false.positive = numeric(runs), control.false.negative = numeric(runs))
+
+comb.results <- data.frame(full.area=numeric(runs), full.AUC = numeric(runs), hetero.area=numeric(runs), hetero.AUC = numeric(runs), missing.area=numeric(runs), missing.AUC = numeric(runs), spread.area = numeric(runs), spread.AUC = numeric(runs), control.area = numeric(runs), control.AUC = numeric(runs))
+
+comb.wrong <-  data.frame(full.false.positive=numeric(runs), full.false.negative = numeric(runs), hetero.false.positive=numeric(runs), hetero.false.negative = numeric(runs), missing.false.positive=numeric(runs), missing.false.negative = numeric(runs), spread.false.positive = numeric(runs), spread.false.negative = numeric(runs), control.false.positive = numeric(runs), control.false.negative = numeric(runs))
+
+for(i in 1:runs){
+  
+  ### Fieldwork
+  # Full information
+  full.pts <- randomPoints(bin.suit, 1000)
+  full.pres<- cbind(full.pts, pa = extract(bin.suit, full.pts))
+  full.pres <- as.data.frame(full.pres)
+  ab <- which(full.pres$pa == 0)
+  full.pres <- full.pres[-c(sample(ab, length(ab)*0.6)),]
+  full.pres <- full.pres[sample(c(1:length(full.pres[,1])), 300),]
+  rm(ab)
+
+  # Heterogenous sampling effort
+  # Take points from the whole of Africa - removing those from within Kenya
+  hetero.pts.africa <- randomPoints(bin.suit, 1000)
+  hetero.pts.africa <- hetero.pts.africa[-which(over(SpatialPoints(hetero.pts.africa, proj4string=CRS(proj4string(kenya))), kenya)$ACP == 1),]
+  hetero.pres.africa <- cbind(hetero.pts.africa, pa = extract(bin.suit, hetero.pts.africa))
+  hetero.pres.africa <- as.data.frame(hetero.pres.africa)
+  ab <- which(hetero.pres.africa$pa == 0)
+  hetero.pres.africa <- hetero.pres.africa[-c(sample(ab, length(ab)*0.6)),]
+  hetero.pres.africa <- hetero.pres.africa[sample(c(1:length(hetero.pres.africa[,1])), 100),]
+  rm(ab)
+  # Take additional points from Kenya and add to data.frame
+  hetero.pts.kenya <- randomPoints(kenya.bin, 1000)
+  hetero.pres.kenya <- cbind(hetero.pts.kenya, pa = extract(kenya.bin, hetero.pts.kenya))
+  hetero.pres.kenya <- as.data.frame(hetero.pres.kenya)
+  ab <- which(hetero.pres.kenya$pa == 0)
+  hetero.pres.kenya <- hetero.pres.kenya[-c(sample(ab, length(ab)*0.6)),]
+  hetero.pres.kenya <- hetero.pres.kenya[sample(c(1:length(hetero.pres.kenya[,1])), 200),]
+  hetero.pres <- rbind(hetero.pres.africa, hetero.pres.kenya)
+  rm(ab)
+
+  # Missing covariates
+  missing.pts <- randomPoints(bin.suit, 1000)
+  missing.pres<- cbind(missing.pts, pa = extract(bin.suit, missing.pts))
+  missing.pres <- as.data.frame(missing.pres)
+  ab <- which(missing.pres$pa == 0)
+  missing.pres <- missing.pres[-c(sample(ab, length(ab)*0.6)),]
+  missing.pres <- missing.pres[sample(c(1:length(missing.pres[,1])), 300),]
+  rm(ab)
+
+  # Disease spreading
+  spread.pts <- randomPoints(kenya.bin, 1000)
+  spread.pres<- cbind(spread.pts, pa = extract(kenya.bin, spread.pts))
+  spread.pres <- as.data.frame(spread.pres)
+  ab <- which(spread.pres$pa == 0)
+  spread.pres <- spread.pres[-c(sample(ab, length(ab)*0.6)),]
+  spread.pres <-spread.pres[sample(c(1:length(spread.pres[,1])), 300),]
+
+  # Control
+  # Kenya points where disease is present first
+  control.pts.kenya <- randomPoints(kenya.bin, 1000)
+  control.pres.kenya<- cbind(control.pts.kenya, pa = extract(kenya.bin, control.pts.kenya))
+  control.pres.kenya <- as.data.frame(control.pres.kenya)
+  ab <- which(control.pres.kenya$pa == 0)
+  control.pres.kenya <- control.pres.kenya[-c(sample(ab, length(ab)*0.6)),]
+  control.pres.kenya <-control.pres.kenya[sample(c(1:length(control.pres.kenya[,1])), 150),]
+  # Tanzania points set to 0 to simulate a successful control programme and combine data
+  control.pts.tanzania <- randomPoints(tanzania.bin, 1000)
+  control.pres.tanzania<- cbind(control.pts.tanzania, pa = 0)
+  control.pres.tanzania <- as.data.frame(control.pres.tanzania)
+  ab <- which(control.pres.tanzania$pa == 0)
+  control.pres.tanzania <- control.pres.tanzania[-c(sample(ab, length(ab)*0.6)),]
+  control.pres.tanzania <-control.pres.tanzania[sample(c(1:length(control.pres.tanzania[,1])), 150),]
+  control.pres <- rbind(control.pres.kenya, control.pres.tanzania)
+  # Take samples from kenya
+  kenya.points <- randomPoints(kenya.bin, 500)
+  kenya.pres<- cbind(kenya.points, pa = extract(kenya.bin, kenya.points))
+  kenya.pres <- as.data.frame(kenya.pres)
+  ab <- which(kenya.pres$pa == 0)
+  kenya.pres <- kenya.pres[-c(sample(ab, length(ab)*0.6)),]
+  rm(ab)
+  
+  ### Environmental data
+  # Full information
+  full.data <- data.frame(presence = numeric(length(full.pres$pa)),mean.temp.yr = numeric(length(full.pres$pa)), min.temp.yr=numeric(length(full.pres$pa)),max.temp.yr=numeric(length(full.pres$pa)),precip.yr = numeric(length(full.pres$pa)), wet.qtr=numeric(length(full.pres$pa)), africa.alt=numeric(length(full.pres$pa)))
+ 
+  full.data$presence <- full.pres$pa
+  full.data$mean.temp.yr <- extract(mean.temp.yr, full.pres[,1:2])
+  full.data$max.temp.yr <- extract(max.temp.yr, full.pres[,1:2])
+  full.data$min.temp.yr <- extract(min.temp.yr, full.pres[,1:2])
+  full.data$precip.yr <- extract(precip.yr, full.pres[,1:2])
+  full.data$wet.qtr <- extract(wet.qtr, full.pres[,1:2])
+  full.data$africa.alt <- extract(africa.alt, full.pres[,1:2])
+
+  # Heterogenous sampling effort
+  hetero.data <- data.frame(presence = numeric(length(hetero.pres$pa)),mean.temp.yr = numeric(length(hetero.pres$pa)), min.temp.yr=numeric(length(hetero.pres$pa)),max.temp.yr=numeric(length(hetero.pres$pa)), precip.yr = numeric(length(hetero.pres$pa)), wet.qtr=numeric(length(full.pres$pa)), africa.alt=numeric(length(hetero.pres$pa)))
+
+  hetero.data$presence <- hetero.pres$pa
+  hetero.data$mean.temp.yr <- extract(mean.temp.yr, hetero.pres[,1:2])
+  hetero.data$max.temp.yr <- extract(max.temp.yr, hetero.pres[,1:2])
+  hetero.data$min.temp.yr <- extract(min.temp.yr, hetero.pres[,1:2])
+  hetero.data$precip.yr <- extract(precip.yr, hetero.pres[,1:2])
+  hetero.data$wet.qtr <- extract(wet.qtr, hetero.pres[,1:2])
+  hetero.data$africa.alt <- extract(africa.alt, hetero.pres[,1:2])
+
+  # Missing covariates
+  missing.data <- data.frame(presence = numeric(length(missing.pres$pa)),mean.temp.yr = numeric(length(missing.pres$pa)), min.temp.yr=numeric(length(missing.pres$pa)),max.temp.yr=numeric(length(missing.pres$pa)),precip.yr = numeric(length(missing.pres$pa)), wet.qtr=numeric(length(full.pres$pa)), africa.alt=numeric(length(missing.pres$pa)))
+
+  missing.data$presence <- missing.pres$pa
+  missing.data$mean.temp.yr <- extract(mean.temp.yr, missing.pres[,1:2])
+  missing.data$max.temp.yr <- extract(max.temp.yr, missing.pres[,1:2])
+  missing.data$min.temp.yr <- extract(min.temp.yr, missing.pres[,1:2])
+  missing.data$precip.yr <- extract(precip.yr, missing.pres[,1:2])
+  missing.data$wet.qtr <- extract(wet.qtr, full.pres[,1:2])
+  missing.data$africa.alt <- extract(africa.alt, missing.pres[,1:2])
+
+  # Disease spreading
+  spread.data <- data.frame(presence = numeric(length(spread.pres$pa)),mean.temp.yr = numeric(length(spread.pres$pa)), min.temp.yr=numeric(length(spread.pres$pa)),max.temp.yr=numeric(length(spread.pres$pa)),precip.yr = numeric(length(spread.pres$pa)), wet.qtr=numeric(length(hetero.pres$pa)), africa.alt=numeric(length(spread.pres$pa)))
+
+  spread.data$presence <- spread.pres$pa
+  spread.data$mean.temp.yr <- extract(mean.temp.yr, spread.pres[,1:2])
+  spread.data$max.temp.yr <- extract(max.temp.yr, spread.pres[,1:2])
+  spread.data$min.temp.yr <- extract(min.temp.yr, spread.pres[,1:2])
+  spread.data$precip.yr <- extract(precip.yr, spread.pres[,1:2])
+  spread.data$wet.qtr <- extract(wet.qtr, full.pres[,1:2])
+  spread.data$africa.alt <- extract(africa.alt, spread.pres[,1:2])
+
+  # Control
+  control.data <- data.frame(presence = numeric(length(control.pres$pa)),mean.temp.yr = numeric(length(control.pres$pa)), min.temp.yr=numeric(length(control.pres$pa)),max.temp.yr=numeric(length(control.pres$pa)),precip.yr = numeric(length(control.pres$pa)), wet.qtr=numeric(length(full.pres$pa)), africa.alt=numeric(length(control.pres$pa)))
+
+  control.data$presence <- control.pres$pa
+  control.data$mean.temp.yr <- extract(mean.temp.yr, control.pres[,1:2])
+  control.data$max.temp.yr <- extract(max.temp.yr, control.pres[,1:2])
+  control.data$min.temp.yr <- extract(min.temp.yr, control.pres[,1:2])
+  control.data$precip.yr <- extract(precip.yr, control.pres[,1:2])
+  control.data$wet.qtr <- extract(wet.qtr, full.pres[,1:2])
+  control.data$africa.alt <- extract(africa.alt, control.pres[,1:2])
+
+  ### Modelling
+  # Full information
+  full.mod <- glm(presence ~ precip.yr * africa.alt, data=full.data, family="binomial")
+
+  # Heterogenous sampling effort
+  hetero.mod <- glm(presence ~ precip.yr * africa.alt, data=hetero.data, family="binomial")
+
+  # Missing covariates
+  missing.mod <- glm(presence ~ wet.qtr + africa.alt, data=missing.data, family="binomial")
+
+  # Disease spreading
+  spread.mod <- glm(presence ~ precip.yr * africa.alt, data=spread.data, family="binomial")
+
+  # Control programme
+  control.mod <- glm(presence ~ precip.yr * africa.alt, data=control.data, family="binomial")
+  
+  ### Predictions
+  # Full information
+  # African prediction
+  full.pred <- predict(full.mod, africa.env, type="response")
+  full.pred.map <- raster(matrix(full.pred, nrow=nrow(africa.alt), ncol=ncol(africa.alt), byrow=T), template=bin.suit)
+  full.pred.bin <- reclassify(full.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+  # Kenya prediction
+  full.pred.kenya <- predict(full.mod, kenya.env, type="response")
+  full.pred.map.kenya <- raster(matrix(full.pred.kenya, nrow=nrow(kenya.alt), ncol=ncol(kenya.alt), byrow=T), template=kenya.bin)
+  full.pred.bin.kenya <- reclassify(full.pred.map.kenya, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+  # Combined Kenya and Tanzania
+  full.pred.comb <- predict(full.mod, comb.env, type="response")
+  full.pred.map.comb <- raster(matrix(full.pred.comb, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.bin)
+  full.pred.bin.comb <- reclassify(full.pred.map.comb, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+
+  # Heterogenous sampling
+  # African prediction
+  hetero.pred <- predict(hetero.mod, africa.env, type="response")
+  hetero.pred.map <- raster(matrix(hetero.pred, nrow=nrow(africa.alt), ncol=ncol(africa.alt), byrow=T), template=bin.suit)
+  hetero.pred.bin <- reclassify(hetero.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+  # Kenya prediction
+  hetero.pred.kenya <- predict(hetero.mod, kenya.env, type="response")
+  hetero.pred.map.kenya <- raster(matrix(hetero.pred.kenya, nrow=nrow(kenya.alt), ncol=ncol(kenya.alt), byrow=T), template=kenya.bin)
+  hetero.pred.bin.kenya <- reclassify(hetero.pred.map.kenya, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+  # Combined Kenya and Tanzania
+  hetero.pred.comb <- predict(hetero.mod, comb.env, type="response")
+  hetero.pred.map.comb <- raster(matrix(hetero.pred.comb, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.bin)
+  hetero.pred.bin.comb <- reclassify(hetero.pred.map.comb, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+
+  # Missing covariates
+  # African prediction
+  missing.pred <- predict(missing.mod, africa.env, type="response")
+  missing.pred.map <- raster(matrix(missing.pred, nrow=nrow(africa.alt), ncol=ncol(africa.alt), byrow=T), template=bin.suit)
+  missing.pred.bin <- reclassify(missing.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+  # Kenya prediction
+  missing.pred.kenya <- predict(missing.mod, kenya.env, type="response")
+  missing.pred.map.kenya <- raster(matrix(missing.pred.kenya, nrow=nrow(kenya.alt), ncol=ncol(kenya.alt), byrow=T), template=kenya.bin)
+  missing.pred.bin.kenya <- reclassify(missing.pred.map.kenya, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+  # Combined Kenya and Tanzania
+  missing.pred.comb <- predict(missing.mod, comb.env, type="response")
+  missing.pred.map.comb <- raster(matrix(missing.pred.comb, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.bin)
+  missing.pred.bin.comb <- reclassify(missing.pred.map.comb, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+
+  # Disease spreading
+  # Africa prediction
+  spread.pred <- predict(spread.mod, africa.env, type="response")
+  spread.pred.map <- raster(matrix(spread.pred, nrow=nrow(africa.alt), ncol=ncol(africa.alt), byrow=T), template=bin.suit)
+  spread.pred.bin <- reclassify(spread.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+  # Kenya prediction
+  spread.pred.kenya <- predict(spread.mod, kenya.env, type="response")
+  spread.pred.map.kenya <- raster(matrix(spread.pred.kenya, nrow=nrow(kenya.alt), ncol=ncol(kenya.alt), byrow=T), template=kenya.bin)
+  spread.pred.bin.kenya <- reclassify(spread.pred.map.kenya, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+  # Combined Kenya and Tanzania
+  spread.pred.comb <- predict(spread.mod, comb.env, type="response")
+  spread.pred.map.comb <- raster(matrix(spread.pred.comb, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.bin)
+  spread.pred.bin.comb <- reclassify(spread.pred.map.comb, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+
+  # Control programme
+  # African prediction
+  control.pred <- predict(control.mod, africa.env, type="response")
+  control.pred.map <- raster(matrix(control.pred, nrow=nrow(africa.alt), ncol=ncol(africa.alt), byrow=T), template=bin.suit)
+  control.pred.bin <- reclassify(control.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+  # Kenya prediction
+  control.pred.kenya <- predict(control.mod, kenya.env, type="response")
+  control.pred.map.kenya <- raster(matrix(control.pred.kenya, nrow=nrow(kenya.alt), ncol=ncol(kenya.alt), byrow=T), template=kenya.bin)
+  control.pred.bin.kenya <- reclassify(control.pred.map.kenya, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+  # Combined Kenya and Tanzania
+  control.pred.comb <- predict(control.mod, comb.env, type="response")
+  control.pred.map.comb <- raster(matrix(control.pred.comb, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.bin)
+  control.pred.bin.comb <- reclassify(control.pred.map.comb, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+  
+  ### Evaluation
+  # Full information
+  # Africa extent
+  dif <- full.pred.bin - bin.suit
+  sim.results$full.area[i] <- length(which(as.matrix(dif== 0)))/length(as.matrix(dif))
+  sim.wrong$full.false.positive[i]<- length(which(as.matrix(dif== 1)))/length(as.matrix(dif))
+  sim.wrong$full.false.negative[i]<- length(which(as.matrix(dif== -1)))/length(as.matrix(dif))
+  full.test.pts <- randomPoints(full.pred.map, 1000)
+  full.test.mod <- extract(full.pred.bin, full.test.pts)
+  full.test.vals <- extract(bin.suit, full.test.pts)
+
+  full.pred.test <- prediction(full.test.mod, full.test.vals)
+  full.perf.test <- performance(full.pred.test, "tpr","fpr")
+  sim.results$full.AUC[i] <- performance(full.pred.test, "auc")@y.values[[1]]
+  
+  # Kenya extent
+  dif.kenya <- full.pred.bin.kenya - kenya.suit
+  kenya.results$full.area[i] <- length(which(as.matrix(dif.kenya== 0)))/length(as.matrix(dif.kenya))
+  kenya.wrong$full.false.positive[i]<- length(which(as.matrix(dif.kenya== 1)))/length(as.matrix(dif.kenya))
+  kenya.wrong$full.false.negative[i]<- length(which(as.matrix(dif.kenya== -1)))/length(as.matrix(dif.kenya))
+  full.test.pts <- randomPoints(full.pred.bin.kenya, 1000)
+  full.test.mod <- extract(full.pred.bin.kenya, full.test.pts)
+  full.test.vals <- extract(kenya.suit, full.test.pts)
+  
+  full.pred.test <- prediction(full.test.mod, full.test.vals)
+  full.perf.test <- performance(full.pred.test, "tpr","fpr")
+  kenya.results$full.AUC[i] <- performance(full.pred.test, "auc")@y.values[[1]]
+  
+    # Combined Kenya and Tanzania extent
+  dif.comb <- full.pred.bin.comb - comb.suit
+  comb.results$full.area[i] <- length(which(as.matrix(dif.comb== 0)))/length(as.matrix(dif.comb))
+  comb.wrong$full.false.positive[i]<- length(which(as.matrix(dif.comb== 1)))/length(as.matrix(dif.comb))
+  kenya.wrong$full.false.negative[i]<- length(which(as.matrix(dif.comb== -1)))/length(as.matrix(dif.comb))
+  comb.results$full.area[i] <- length(which(as.matrix(dif== 0)))/length(as.matrix(dif))
+  full.test.pts <- randomPoints(full.pred.bin.comb, 1000)
+  full.test.mod <- extract(full.pred.bin.comb, full.test.pts)
+  full.test.vals <- extract(comb.suit, full.test.pts)
+  
+  full.pred.test <- prediction(full.test.mod, full.test.vals)
+  full.perf.test <- performance(full.pred.test, "tpr","fpr")
+  comb.results$full.AUC[i] <- performance(full.pred.test, "auc")@y.values[[1]]
+
+  # Heterogenous sampling effort
+  # Africa extent
+  dif <- hetero.pred.bin - bin.suit
+  sim.results$hetero.area[i] <- length(which(as.matrix(dif== 0)))/length(as.matrix(dif))
+  sim.wrong$hetero.false.positive[i]<- length(which(as.matrix(dif== 1)))/length(as.matrix(dif))
+  sim.wrong$hetero.false.negative[i]<- length(which(as.matrix(dif== -1)))/length(as.matrix(dif))
+  hetero.test.pts <- randomPoints(hetero.pred.map, 1000)
+  hetero.test.mod <- extract(hetero.pred.bin, hetero.test.pts)
+  hetero.test.vals <- extract(bin.suit, hetero.test.pts)
+
+  hetero.pred.test <- prediction(hetero.test.mod, hetero.test.vals)
+  hetero.perf.test <- performance(hetero.pred.test, "tpr","fpr")
+  sim.results$hetero.AUC[i] <- performance(hetero.pred.test, "auc")@y.values[[1]]
+  
+  # Kenya extent
+  dif.kenya <- hetero.pred.bin.kenya - kenya.suit
+  kenya.results$hetero.area[i] <- length(which(as.matrix(dif== 0)))/length(as.matrix(dif))
+  kenya.wrong$hetero.false.positive[i]<- length(which(as.matrix(dif.kenya== 1)))/length(as.matrix(dif.kenya))
+  kenya.wrong$hetero.false.negative[i]<- length(which(as.matrix(dif.kenya== -1)))/length(as.matrix(dif.kenya))
+  hetero.test.pts <- randomPoints(hetero.pred.bin.kenya, 1000)
+  hetero.test.mod <- extract(hetero.pred.bin.kenya, hetero.test.pts)
+  hetero.test.vals <- extract(kenya.suit, hetero.test.pts)
+  
+  hetero.pred.test <- prediction(hetero.test.mod, hetero.test.vals)
+  hetero.perf.test <- performance(hetero.pred.test, "tpr","fpr")
+  kenya.results$hetero.AUC[i] <- performance(hetero.pred.test, "auc")@y.values[[1]]
+  
+  # Combined Kenya and Tanzania extent
+  dif.comb <- hetero.pred.bin.comb - comb.suit
+  comb.results$hetero.area[i] <- length(which(as.matrix(dif== 0)))/length(as.matrix(dif))
+  comb.wrong$hetero.false.positive[i]<- length(which(as.matrix(dif.comb== 1)))/length(as.matrix(dif.comb))
+  comb.wrong$hetero.false.negative[i]<- length(which(as.matrix(dif.comb== -1)))/length(as.matrix(dif.comb))
+  hetero.test.pts <- randomPoints(hetero.pred.bin.comb, 1000)
+  hetero.test.mod <- extract(hetero.pred.bin.comb, hetero.test.pts)
+  hetero.test.vals <- extract(comb.suit, hetero.test.pts)
+  
+  hetero.pred.test <- prediction(hetero.test.mod, hetero.test.vals)
+  hetero.perf.test <- performance(hetero.pred.test, "tpr","fpr")
+  comb.results$hetero.AUC[i] <- performance(hetero.pred.test, "auc")@y.values[[1]]
+
+  # Missing covariates 
+  # Africa extent
+  dif <- missing.pred.bin - bin.suit
+  sim.results$missing.area[i] <- length(which(as.matrix(dif== 0)))/length(as.matrix(dif))
+  sim.wrong$missing.false.positive[i]<- length(which(as.matrix(dif== 1)))/length(as.matrix(dif))
+  sim.wrong$missing.false.negative[i]<- length(which(as.matrix(dif== -1)))/length(as.matrix(dif))
+  missing.test.pts <- randomPoints(missing.pred.map, 1000)
+  missing.test.mod <- extract(missing.pred.bin, missing.test.pts)
+  missing.test.vals <- extract(bin.suit, missing.test.pts)
+
+  missing.pred.test <- prediction(missing.test.mod, missing.test.vals)
+  missing.perf.test <- performance(missing.pred.test, "tpr","fpr")
+  sim.results$missing.AUC[i] <- performance(missing.pred.test, "auc")@y.values[[1]]
+  
+  # Kenya extent
+  dif.kenya <- missing.pred.bin.kenya - kenya.suit
+  kenya.results$missing.area[i] <- length(which(as.matrix(dif== 0)))/length(as.matrix(dif))
+  kenya.wrong$missing.false.positive[i]<- length(which(as.matrix(dif.kenya== 1)))/length(as.matrix(dif.kenya))
+  kenya.wrong$missing.false.negative[i]<- length(which(as.matrix(dif.kenya== -1)))/length(as.matrix(dif.kenya))
+  missing.test.pts <- randomPoints(missing.pred.bin.kenya, 1000)
+  missing.test.mod <- extract(missing.pred.bin.kenya, missing.test.pts)
+  missing.test.vals <- extract(kenya.suit, missing.test.pts)
+  
+  missing.pred.test <- prediction(missing.test.mod, missing.test.vals)
+  missing.perf.test <- performance(missing.pred.test, "tpr","fpr")
+  kenya.results$missing.AUC[i] <- performance(missing.pred.test, "auc")@y.values[[1]]
+  
+  # Combined Kenya and Tanzania extent
+  dif.comb <- missing.pred.bin.comb - comb.suit
+  comb.results$missing.area[i] <- length(which(as.matrix(dif== 0)))/length(as.matrix(dif))
+  comb.wrong$missing.false.positive[i]<- length(which(as.matrix(dif.comb== 1)))/length(as.matrix(dif.comb))
+  comb.wrong$missing.false.negative[i]<- length(which(as.matrix(dif.comb== -1)))/length(as.matrix(dif.comb))
+  missing.test.pts <- randomPoints(missing.pred.bin.comb, 1000)
+  missing.test.mod <- extract(missing.pred.bin.comb, missing.test.pts)
+  missing.test.vals <- extract(comb.suit, missing.test.pts)
+  
+  missing.pred.test <- prediction(missing.test.mod, missing.test.vals)
+  missing.perf.test <- performance(missing.pred.test, "tpr","fpr")
+  comb.results$missing.AUC[i] <- performance(missing.pred.test, "auc")@y.values[[1]]
+  
+  # Disease spreading
+  # Africa extent
+  dif <- spread.pred.bin - bin.suit
+  sim.results$spread.area[i] <- length(which(as.matrix(dif== 0)))/length(as.matrix(dif))
+  sim.wrong$spread.false.positive[i]<- length(which(as.matrix(dif== 1)))/length(as.matrix(dif))
+  sim.wrong$spread.false.negative[i]<- length(which(as.matrix(dif== -1)))/length(as.matrix(dif))
+  spread.test.pts <- randomPoints(spread.pred.map, 1000)
+  spread.test.mod <- extract(spread.pred.bin, spread.test.pts)
+  spread.test.vals <- extract(bin.suit, spread.test.pts)
+
+  spread.pred.test <- prediction(spread.test.mod, spread.test.vals)
+  spread.perf.test <- performance(spread.pred.test, "tpr","fpr")
+  sim.results$spread.AUC[i] <- performance(spread.pred.test, "auc")@y.values[[1]]
+  
+  # Kenya extent
+  dif.kenya <- spread.pred.bin.kenya - kenya.suit
+  kenya.results$spread.area[i] <- length(which(as.matrix(dif== 0)))/length(as.matrix(dif))
+  kenya.wrong$spread.false.positive[i]<- length(which(as.matrix(dif.kenya== 1)))/length(as.matrix(dif.kenya))
+  kenya.wrong$spread.false.negative[i]<- length(which(as.matrix(dif.kenya== -1)))/length(as.matrix(dif.kenya))
+  spread.test.pts <- randomPoints(spread.pred.bin.kenya, 1000)
+  spread.test.mod <- extract(spread.pred.bin.kenya, spread.test.pts)
+  spread.test.vals <- extract(kenya.suit, spread.test.pts)
+  
+  spread.pred.test <- prediction(spread.test.mod, spread.test.vals)
+  spread.perf.test <- performance(spread.pred.test, "tpr","fpr")
+  kenya.results$spread.AUC[i] <- performance(spread.pred.test, "auc")@y.values[[1]]
+  
+  # Combined Kenya and Tanzania extent
+  dif.comb <- spread.pred.bin.comb - comb.suit
+  comb.results$spread.area[i] <- length(which(as.matrix(dif== 0)))/length(as.matrix(dif))
+  comb.wrong$spread.false.positive[i]<- length(which(as.matrix(dif.comb== 1)))/length(as.matrix(dif.comb))
+  comb.wrong$spread.false.negative[i]<- length(which(as.matrix(dif.comb== -1)))/length(as.matrix(dif.comb))
+  spread.test.pts <- randomPoints(spread.pred.bin.comb, 1000)
+  spread.test.mod <- extract(spread.pred.bin.comb, spread.test.pts)
+  spread.test.vals <- extract(comb.suit, spread.test.pts)
+  
+  spread.pred.test <- prediction(spread.test.mod, spread.test.vals)
+  spread.perf.test <- performance(spread.pred.test, "tpr","fpr")
+  comb.results$spread.AUC[i] <- performance(spread.pred.test, "auc")@y.values[[1]]
+
+  # Control programme
+  # Africa extent
+  dif <- control.pred.bin - bin.suit
+  sim.results$control.area[i] <- length(which(as.matrix(dif== 0)))/length(as.matrix(dif))
+  sim.wrong$control.false.positive[i]<- length(which(as.matrix(dif== 1)))/length(as.matrix(dif))
+  sim.wrong$control.false.negative[i]<- length(which(as.matrix(dif== -1)))/length(as.matrix(dif))
+  control.test.pts <- randomPoints(control.pred.map, 1000)
+  control.test.mod <- extract(control.pred.bin, control.test.pts)
+  control.test.vals <- extract(bin.suit, control.test.pts)
+
+  control.pred.test <- prediction(control.test.mod, control.test.vals)
+  control.perf.test <- performance(control.pred.test, "tpr","fpr")
+  sim.results$control.AUC[i] <- performance(control.pred.test, "auc")@y.values[[1]]
+  
+  # Kenya extent
+  dif.kenya <- control.pred.bin.kenya - kenya.suit
+  kenya.results$control.area[i] <- length(which(as.matrix(dif== 0)))/length(as.matrix(dif))
+  kenya.wrong$control.false.positive[i]<- length(which(as.matrix(dif.kenya== 1)))/length(as.matrix(dif.kenya))
+  kenya.wrong$control.false.negative[i]<- length(which(as.matrix(dif.kenya== -1)))/length(as.matrix(dif.kenya))
+  control.test.pts <- randomPoints(control.pred.bin.kenya, 1000)
+  control.test.mod <- extract(control.pred.bin.kenya, control.test.pts)
+  control.test.vals <- extract(kenya.suit, control.test.pts)
+  
+  control.pred.test <- prediction(control.test.mod, control.test.vals)
+  control.perf.test <- performance(control.pred.test, "tpr","fpr")
+  kenya.results$control.AUC[i] <- performance(control.pred.test, "auc")@y.values[[1]]
+  
+  # Combined Kenya and Tanzania extent
+  dif.comb <- control.pred.bin.comb - comb.suit
+  comb.results$control.area[i] <- length(which(as.matrix(dif== 0)))/length(as.matrix(dif))
+  comb.wrong$control.false.positive[i]<- length(which(as.matrix(dif.comb== 1)))/length(as.matrix(dif.comb))
+  comb.wrong$control.false.negative[i]<- length(which(as.matrix(dif.comb== -1)))/length(as.matrix(dif.comb))
+  control.test.pts <- randomPoints(control.pred.bin.comb, 1000)
+  control.test.mod <- extract(control.pred.bin.comb, control.test.pts)
+  control.test.vals <- extract(comb.suit, control.test.pts)
+  
+  control.pred.test <- prediction(control.test.mod, control.test.vals)
+  control.perf.test <- performance(control.pred.test, "tpr","fpr")
+  comb.results$control.AUC[i] <- performance(control.pred.test, "auc")@y.values[[1]]
+  
+}
+
+```
+
+```{r plot.info, echo=FALSE,  include=FALSE}
+# Panel labelling function
+Panel <- function(panel)
+{
+  par(xpd=NA)
+  u <- par('usr')
+  text(u[1]-(u[2]-u[1])*.01, u[4]+(u[4]-u[3])*.1, panel, cex=1)
+  par(xpd=FALSE)
+}
+
+# Names for results plots
+plot.labs <- c("Full", "Hetero", "Missing", "Spread", "Control")
+```
+
+```{r iterationplotafrica, fig.width=12, fig.height=12, echo=FALSE, fig.cap="Results of 100 simulations for the five scenarios showing (a) Proportion of the study area correct, (b) AUC scores, (c) proportion of false positives and (d) proportion of false negatives across Africa"}
+par(mfrow=c(2,2))
+boxplot(sim.results[,c(1,3,5,7,9)], las=2, names=plot.labs)
+Panel("(a)")
+boxplot(sim.results[,c(2,4,6,8,10)], las=2, names=plot.labs)
+Panel("(b)")
+boxplot(sim.wrong[,c(1,3,5,7,9)], las=2, names=plot.labs)
+Panel("(c)")
+boxplot(sim.wrong[,c(2,4,6,8,10)], las=2, names=plot.labs)
+Panel("(d)")
+```
+
+```{r iterationplotkenya, fig.width=12, fig.height=12, echo=FALSE, fig.cap="Results of 100 simulations for the five scenarios showing (a) Proportion of the study area correct, (b) AUC scores, (c) proportion of false positives and (d) proportion of false negatives across Kenya"}
+par(mfrow=c(2,2))
+boxplot(kenya.results[,c(1,3,5,7,9)], las=2, names=plot.labs)
+Panel("(a)")
+boxplot(kenya.results[,c(2,4,6,8,10)], las=2, names=plot.labs)
+Panel("(b)")
+boxplot(kenya.wrong[,c(1,3,5,7,9)], las=2, names=plot.labs)
+Panel("(c)")
+boxplot(kenya.wrong[,c(2,4,6,8,10)], las=2, names=plot.labs)
+Panel("(d)")
+```
+
+```{r iterationplotcomb, fig.width=12, fig.height=12, echo=FALSE, fig.cap="Results of 100 simulations for the five scenarios showing (a) Proportion of the study area correct, (b) AUC scores, (c) proportion of false positives and (d) proportion of false negatives across a the combined extent of Kenya and Tanzania"}
+par(mfrow=c(2,2))
+boxplot(comb.results[,c(1,3,5,7,9)], las=2, names=plot.labs)
+Panel("(a)")
+boxplot(comb.results[,c(2,4,6,8,10)], las=2, names=plot.labs)
+Panel("(b)")
+boxplot(comb.wrong[,c(1,3,5,7,9)], las=2, names=plot.labs)
+Panel("(c)")
+boxplot(comb.wrong[,c(2,4,6,8,10)], las=2, names=plot.labs)
+Panel("(d)")
 ```
