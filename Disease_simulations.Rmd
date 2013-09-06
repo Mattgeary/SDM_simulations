@@ -1054,7 +1054,7 @@ Panel <- function(panel)
 {
   par(xpd=NA)
   u <- par('usr')
-  text(u[1]-(u[2]-u[1])*.01, u[4]+(u[4]-u[3])*.1, panel, cex=1)
+  text(u[1]-(u[2]-u[1])*.01, u[4]+(u[4]-u[3])*.1, panel, cex=2)
   par(xpd=FALSE)
 }
 
@@ -1062,38 +1062,43 @@ Panel <- function(panel)
 plot.labs <- c("Full", "Hetero", "Missing", "Spread", "Control")
 ```
 
+Overall, the full model seems to perform the best in terms of the proportion of the study area predicted correct at the African extent (Figure 8a), for Kenya (Figure 9a) and for the combined Kenya and Tanzania extent (Figure 10a). Across Africa the missing covariates model performs better than might be expected in terms of proportion of the study area predicted correct (Figure 8a) but less well in terms of AUC score (Figure 8b). The full information model and the heterogenous sampling effort both have high AUC scores for the African extent (Figure 8b). The heterogenous sampling effort model also performs well at more limited extents with the full information model being noticeably less successful in Kenya (Figure 9b) and the combined Kenya extent where it is relatively low and Tanzania extent where it is highly variable (Figure 10b). At all extents the control measures model performs poorly in terms of AUC score and at the more limited extents the same is true for the missing covariate model. |The spreading disease model performs poorly across Africa (Figure 8) but considerably more successfully  across both Kenya (Figure 9) and the combined Kenya and Tanzania extent (Figure 10). 
+
+Across Africa (Figure 8a & b) the full model and the heterogenous sampling effort model have low values for both false positive predictions (Figure 8a) and false negative predictions (Figure 8b). The missing covariate model has low fasle negatives but high false positives, the spreading diesease model has relativelt high false negatives and low false positives and the control measures model has high numbers of both. At the extent of Kenya both the full information model and the heterogenous sampling effort model have low numbers of false positives (Figure 9a) and moderate numbers of false negatives (Figure 9b) the proportion of which are highly variable for the heterogenous sampling effort model. The missing covariates model has a low number of false positives and a high number of false negatives. The spreading disease model and the control measures model both have high proportions of fasle positives  but where the spreading disease model has low false negatives the control measures model has a larger proportion. In the combined Kenya and Tanzania region the full information model has highly variable proportions of false positives (Figure 10a) and a low proportion of false negatives (Figure 10b). The heterogenous sampling effort model and the spreading disease models have low proportions of both. The missing covariates and control measures model both have a low proportion of false positives but a high proportion of false negatives.
+
+
 ```{r iterationplotafrica, fig.width=12, fig.height=12, echo=FALSE, fig.cap="Results of 100 simulations for the five scenarios showing (a) Proportion of the study area correct, (b) AUC scores, (c) proportion of false positives and (d) proportion of false negatives across Africa"}
 par(mfrow=c(2,2))
-boxplot(sim.results[,c(1,3,5,7,9)], las=2, names=plot.labs)
+boxplot(sim.results[,c(1,3,5,7,9)], las=2, names=plot.labs, cex.axis=2)
 Panel("(a)")
-boxplot(sim.results[,c(2,4,6,8,10)], las=2, names=plot.labs)
+boxplot(sim.results[,c(2,4,6,8,10)], las=2, names=plot.labs, cex.axis=2)
 Panel("(b)")
-boxplot(sim.wrong[,c(1,3,5,7,9)], las=2, names=plot.labs)
+boxplot(sim.wrong[,c(1,3,5,7,9)], las=2, names=plot.labs, cex.axis=2)
 Panel("(c)")
-boxplot(sim.wrong[,c(2,4,6,8,10)], las=2, names=plot.labs)
+boxplot(sim.wrong[,c(2,4,6,8,10)], las=2, names=plot.labs, cex.axis=2)
 Panel("(d)")
 ```
 
 ```{r iterationplotkenya, fig.width=12, fig.height=12, echo=FALSE, fig.cap="Results of 100 simulations for the five scenarios showing (a) Proportion of the study area correct, (b) AUC scores, (c) proportion of false positives and (d) proportion of false negatives across Kenya"}
 par(mfrow=c(2,2))
-boxplot(kenya.results[,c(1,3,5,7,9)], las=2, names=plot.labs)
+boxplot(kenya.results[,c(1,3,5,7,9)], las=2, names=plot.labs, cex.axis=2)
 Panel("(a)")
-boxplot(kenya.results[,c(2,4,6,8,10)], las=2, names=plot.labs)
+boxplot(kenya.results[,c(2,4,6,8,10)], las=2, names=plot.labs, cex.axis=2)
 Panel("(b)")
-boxplot(kenya.wrong[,c(1,3,5,7,9)], las=2, names=plot.labs)
+boxplot(kenya.wrong[,c(1,3,5,7,9)], las=2, names=plot.labs, cex.axis=2)
 Panel("(c)")
-boxplot(kenya.wrong[,c(2,4,6,8,10)], las=2, names=plot.labs)
+boxplot(kenya.wrong[,c(2,4,6,8,10)], las=2, names=plot.labs, cex.axis=2)
 Panel("(d)")
 ```
 
 ```{r iterationplotcomb, fig.width=12, fig.height=12, echo=FALSE, fig.cap="Results of 100 simulations for the five scenarios showing (a) Proportion of the study area correct, (b) AUC scores, (c) proportion of false positives and (d) proportion of false negatives across a the combined extent of Kenya and Tanzania"}
 par(mfrow=c(2,2))
-boxplot(comb.results[,c(1,3,5,7,9)], las=2, names=plot.labs)
+boxplot(comb.results[,c(1,3,5,7,9)], las=2, names=plot.labs, cex.axis=2)
 Panel("(a)")
-boxplot(comb.results[,c(2,4,6,8,10)], las=2, names=plot.labs)
+boxplot(comb.results[,c(2,4,6,8,10)], las=2, names=plot.labs, cex.axis=2)
 Panel("(b)")
-boxplot(comb.wrong[,c(1,3,5,7,9)], las=2, names=plot.labs)
+boxplot(comb.wrong[,c(1,3,5,7,9)], las=2, names=plot.labs, cex.axis=2)
 Panel("(c)")
-boxplot(comb.wrong[,c(2,4,6,8,10)], las=2, names=plot.labs)
+boxplot(comb.wrong[,c(2,4,6,8,10)], las=2, names=plot.labs, cex.axis=2)
 Panel("(d)")
 ```
