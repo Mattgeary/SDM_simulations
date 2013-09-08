@@ -612,7 +612,7 @@ The results of these projections are based on randomly placed points so there is
 
 
 ```{r, Iterations, echo=FALSE,  include=FALSE}
-runs <- 10
+runs <- 100
 
 sim.results <- data.frame(full.area=numeric(runs), full.AUC = numeric(runs), hetero.area=numeric(runs), hetero.AUC = numeric(runs), missing.area=numeric(runs), missing.AUC = numeric(runs), spread.area = numeric(runs), spread.AUC = numeric(runs), control.area = numeric(runs), control.AUC = numeric(runs))
 
