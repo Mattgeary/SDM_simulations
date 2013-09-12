@@ -51,14 +51,17 @@ The folling demonstrates the potential pitfalls in modelling disease distributio
 rcl <- matrix(c(0, 198.999,0, 198.9999, 265, 1, 256.0001, 315,0), nrow=3, ncol=3, byrow=T)
 bin.mean.temp <- reclassify(mean.temp.yr, rcl)
 
-rcl <- matrix(c(-354, 149.999, 0, 149.9999, 993, 1, 993.0001, 3884,0), nrow=3, ncol=3, byrow=T)
-bin.alt <- reclassify(africa.alt, rcl)
+#rcl <- matrix(c(-354, 149.999, 0, 149.9999, 993, 1, 993.0001, 3884,0), nrow=3, ncol=3, byrow=T)
+#bin.alt <- reclassify(africa.alt, rcl)
+
 
 rcl <- matrix(c(0, 9.999, 0,9.9999, 200.0001, 1, 200.0002, 365, 0), nrow=3, ncol=3, byrow=T)
 bin.precip <- reclassify(precip.yr, rcl)
 
-rcl <- matrix(c(0, 2.999, 0,2.9999, 3, 1), nrow=2, ncol=3, byrow=T)
-bin.suit <- reclassify((bin.mean.temp+bin.alt+bin.precip), rcl)
+#rcl <- matrix(c(0, 2.999, 0,2.9999, 3, 1), nrow=2, ncol=3, byrow=T)
+#bin.suit <- reclassify((bin.mean.temp+bin.alt+bin.precip), rcl)
+rcl <- matrix(c(0, 1.999, 0,1.9999, 2, 1), nrow=2, ncol=3, byrow=T)
+bin.suit <- reclassify((bin.mean.temp+bin.precip), rcl)
 kenya.suit <- crop(bin.suit, extent(kenya))
 comb.suit <- crop(bin.suit, extent(c(29.32717, 41.88752, -11.74569,  4.633819)))
 ```
@@ -611,7 +614,7 @@ par(oldpar)
 The results of these projections are based on randomly placed points so there is the potential for variations in the modelling outcomes fo each scenario. To investigate the variability in these results and compare across scenarios the models are repeated 100 times each and assessed in terms of AUC azlong with the proportion of the study area correct, the proportion of false negative produced and the proportion of false positives.
 
 
-```{r, Iterations, echo=FALSE,  include=FALSE}
+```{r Iterations, echo=FALSE,  include=FALSE}
 runs <- 100
 
 sim.results <- data.frame(full.area=numeric(runs), full.AUC = numeric(runs), hetero.area=numeric(runs), hetero.AUC = numeric(runs), missing.area=numeric(runs), missing.AUC = numeric(runs), spread.area = numeric(runs), spread.AUC = numeric(runs), control.area = numeric(runs), control.AUC = numeric(runs))
