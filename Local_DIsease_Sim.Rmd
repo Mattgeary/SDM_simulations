@@ -15,6 +15,15 @@ library(ROCR)
 africa.shp <- readShapeSpatial("africa.shp", proj4string=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
 kenya <- getData('GADM', country='KEN', level=0)
 tanzania <- getData('GADM', country='TZA', level=0)
+uganda <- getData('GADM', country='UGA', level=0)
+malawi <- getData('GADM', country='MWI', level=0)
+mozambique <- getData('GADM', country='MOZ', level=0)
+Zimbabwe <- getData('GADM', country='ZWE', level=0)
+Zambia <- getData('GADM', country='ZMB', level=0)
+# Congo
+# Botswana
+# South Africa
+bound.box <- matrix(c(21.99937, -26.86869, 41.88752, -26.8686, 41.88752,  4.633819, 21.99937, 4.633819), nrow=4, ncol=2, byrow=2)
 
 # Read in global data
 global.mean.temp <- getData('worldclim', var='tmean', res=10)
@@ -43,19 +52,20 @@ wet.qtr <- subset(africa.bio, "bio13")
 
 
 
-The folling demonstrates the potential pitfalls in modelling disease distributions using a virtual disease. The disease niche is set according to several environmental criteria and is modelled in a number of simulated scenarios. Some of the problems demonstrated below are well known in the ecological literature but the nature of these problems is often framed differently in epidemiological research and so should be highlighted in this particular context. The criteria for suitabile areas for this vitrual disease will be as follows:
+The folling demonstrates the potential pitfalls in modelling disease distributions using a virtual disease. The disease niche is set according to several environmental criteria and is modelled in a number of simulated scenarios. Some of the problems demonstrated below are well known in the ecological literature but the nature of these problems is often framed differently in epidemiological research and so should be highlighted in this particular context. The criteria for suitabile areas for this virtual disease will be as follows:
 
-* Mean temperature between 20.0 and 26.5 degrees C
-* Precipitation above 50 and below 180
+* Mean temperature between 18.0 and 22.5 degrees C
+* Precipitation above 60 and below 170
 
 ```{r DiseaseRules, echo=FALSE, include=FALSE}
-rcl <- matrix(c(0, 209.999,0, 209.9999, 265, 1, 256.0001, 315,0), nrow=3, ncol=3, byrow=T)
+rcl <- matrix(c(0, 179.999,0, 179.9999, 225, 1, 225.0001, 315,0), nrow=3, ncol=3, byrow=T)
 bin.mean.temp <- reclassify(mean.temp.yr, rcl)
 
 #rcl <- matrix(c(-354, 149.999, 0, 149.9999, 993, 1, 993.0001, 3884,0), nrow=3, ncol=3, byrow=T)
 #bin.alt <- reclassify(africa.alt, rcl)
 
-rcl <- matrix(c(0, 49.999, 0,49.9999, 180.0001, 1, 180.0002, 365, 0), nrow=3, ncol=3, byrow=T)
+
+rcl <- matrix(c(0, 59.999, 0, 59.9999, 170.0001, 1, 170.0002, 365, 0), nrow=3, ncol=3, byrow=T)
 bin.precip <- reclassify(precip.yr, rcl)
 
 #rcl <- matrix(c(0, 2.999, 0,2.9999, 3, 1), nrow=2, ncol=3, byrow=T)
@@ -63,7 +73,7 @@ bin.precip <- reclassify(precip.yr, rcl)
 rcl <- matrix(c(0, 1.999, 0,1.9999, 2, 1), nrow=2, ncol=3, byrow=T)
 comb.suit <- reclassify((bin.mean.temp+bin.precip), rcl)
 kenya.suit <- crop(comb.suit, extent(kenya))
-comb.suit <- crop(comb.suit, extent(c(29.32717, 41.88752, -11.74569,  4.633819)))
+comb.suit <- crop(comb.suit, extent(c(21.99937, 41.88752, -26.86869,  4.633819)))
 ```
 ```{r KenyaExtent, echo=FALSE, include=FALSE}
 # Crop to Kenya extent
@@ -95,7 +105,7 @@ tanzania.bin <- crop(comb.suit, extent(tanzania))
 
 ```{r Combined, echo=FALSE, include=FALSE}
 # Combined Kenya and Tanzania
-comb.extent <- extent(c(29.32717, 41.88752, -11.74569,  4.633819))
+comb.extent <- extent(c(21.99937, 41.88752, -26.86869,  4.633819))
 comb.mean.temp <-  crop(mean.temp.yr, comb.extent)
 #comb.min.temp <-  crop(min.temp.yr, comb.extent)
 #comb.max.temp <-  crop(max.temp.yr, comb.extent)
@@ -155,17 +165,42 @@ hetero.pres.comb <- cbind(hetero.pts.comb, pa = extract(comb.suit, hetero.pts.co
 hetero.pres.comb <- as.data.frame(hetero.pres.comb)
 ab <- which(hetero.pres.comb$pa == 0)
 hetero.pres.comb <- hetero.pres.comb[-c(sample(ab, length(ab)*0.6)),]
-hetero.pres.comb <- hetero.pres.comb[sample(c(1:length(hetero.pres.comb[,1])), 100),]
+hetero.pres.comb <- hetero.pres.comb[sample(c(1:length(hetero.pres.comb[,1])), 50),]
 rm(ab)
 # Take additional points from Kenya and add to data.frame
 hetero.pts.kenya <- randomPoints(kenya.bin, 1000)
 hetero.pres.kenya <- cbind(hetero.pts.kenya, pa = extract(kenya.bin, hetero.pts.kenya))
 hetero.pres.kenya <- as.data.frame(hetero.pres.kenya)
 ab <- which(hetero.pres.kenya$pa == 0)
-hetero.pres.kenya <- hetero.pres.kenya[-c(sample(ab, length(ab)*0.6)),]
-hetero.pres.kenya <- hetero.pres.kenya[sample(c(1:length(hetero.pres.kenya[,1])), 200),]
+hetero.pres.kenya <- hetero.pres.kenya[-c(sample(ab, length(ab)*0.25)),]
+hetero.pres.kenya <- hetero.pres.kenya[sample(c(1:length(hetero.pres.kenya[,1])), 250),]
 hetero.pres <- rbind(hetero.pres.comb, hetero.pres.kenya)
 rm(ab)
+
+## Heterogenous sampling effort
+## Take points from the whole of comb - removing those from above 1500m asl
+#hetero.pts.comb <- randomPoints(comb.suit, 1000)
+#hetero.alt <- extract(comb.alt, hetero.pts.comb)
+#hetero.pts.comb <- hetero.pts.comb[-which(hetero.alt > 1000),]
+#hetero.pres.comb <- cbind(hetero.pts.comb, pa = extract(comb.suit, hetero.pts.comb))
+#hetero.pres.comb <- as.data.frame(hetero.pres.comb)
+#ab <- which(hetero.pres.comb$pa == 0)
+#hetero.pres.comb <- hetero.pres.comb[-c(sample(ab, length(ab)*0.25)),]
+#hetero.pres.comb <- hetero.pres.comb[sample(c(1:length(hetero.pres.comb[,1])), 200),]
+#rm(ab)
+#rm(hetero.alt)
+## Take additional points from above 1500m asl
+#hetero.pts.high <- randomPoints(comb.suit, 1000)
+#hetero.alt <-  extract(comb.alt, hetero.pts.high)
+#hetero.pts.comb <- hetero.pts.comb[-which(hetero.alt <= 1000),]
+#hetero.pres.high <- cbind(hetero.pts.high, pa = extract(comb.suit, hetero.pts.high))
+#hetero.pres.high <- as.data.frame(hetero.pres.high)
+#ab <- which(hetero.pres.high$pa == 0)
+#hetero.pres.high <- hetero.pres.high[-c(sample(ab, length(ab)*0.6)),]
+#hetero.pres.high <- hetero.pres.high[sample(c(1:length(hetero.pres.high[,1])), 100),]
+#hetero.pres <- rbind(hetero.pres.comb, hetero.pres.high)
+#rm(ab)
+#rm(hetero.alt)
 
 # Missing covariates
 missing.pts <- randomPoints(comb.suit, 1000)
@@ -368,7 +403,7 @@ kenya.env$wet.qtr <- values(kenya.wet.qtr)
 kenya.env$africa.alt <-values(kenya.alt)
 
 # Create a dataframe for the combined Kenya and Tanzania raster data
-comb.env <- data.frame(mean.temp.yr=numeric(7350), precip.yr=numeric(7350), wet.qtr=numeric(7350), africa.alt=numeric(7350))
+comb.env <- data.frame(mean.temp.yr=numeric(22491), precip.yr=numeric(22491), wet.qtr=numeric(22491), africa.alt=numeric(22491))
 
 comb.env$mean.temp.yr <-values(comb.mean.temp)
 comb.env$precip.yr <- values(comb.precip)
@@ -382,57 +417,57 @@ comb.env$africa.alt <-values(comb.alt)
 # African prediction
 full.pred <- predict(full.mod.4, comb.env, type="response")
 full.pred.map <- raster(matrix(full.pred, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.suit)
-full.pred.bin <- reclassify(full.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+full.pred.bin <- reclassify(full.pred.map, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
 # Kenya prediction
 full.pred.kenya <- predict(full.mod.4, kenya.env, type="response")
 full.pred.map.kenya <- raster(matrix(full.pred.kenya, nrow=nrow(kenya.alt), ncol=ncol(kenya.alt), byrow=T), template=kenya.bin)
-full.pred.bin.kenya <- reclassify(full.pred.map.kenya, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+full.pred.bin.kenya <- reclassify(full.pred.map.kenya, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
 # Combined Kenya and Tanzania
 full.pred.comb <- predict(full.mod.4, comb.env, type="response")
 full.pred.map.comb <- raster(matrix(full.pred.comb, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.bin)
-full.pred.bin.comb <- reclassify(full.pred.map.comb, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+full.pred.bin.comb <- reclassify(full.pred.map.comb, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
 
 # Heterogenous sampling
 # African prediction
 hetero.pred <- predict(hetero.mod.4, comb.env, type="response")
 hetero.pred.map <- raster(matrix(hetero.pred, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.suit)
-hetero.pred.bin <- reclassify(hetero.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+hetero.pred.bin <- reclassify(hetero.pred.map, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
 # Kenya prediction
 hetero.pred.kenya <- predict(hetero.mod.4, kenya.env, type="response")
 hetero.pred.map.kenya <- raster(matrix(hetero.pred.kenya, nrow=nrow(kenya.alt), ncol=ncol(kenya.alt), byrow=T), template=kenya.bin)
-hetero.pred.bin.kenya <- reclassify(hetero.pred.map.kenya, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+hetero.pred.bin.kenya <- reclassify(hetero.pred.map.kenya, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
 # Combined Kenya and Tanzania
 hetero.pred.comb <- predict(hetero.mod.4, comb.env, type="response")
 hetero.pred.map.comb <- raster(matrix(hetero.pred.comb, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.bin)
-hetero.pred.bin.comb <- reclassify(hetero.pred.map.comb, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+hetero.pred.bin.comb <- reclassify(hetero.pred.map.comb, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
 
 # Missing covariates
 # African prediction
 missing.pred <- predict(missing.mod.3, comb.env, type="response")
 missing.pred.map <- raster(matrix(missing.pred, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.suit)
-missing.pred.bin <- reclassify(missing.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+missing.pred.bin <- reclassify(missing.pred.map, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
 # Kenya prediction
 missing.pred.kenya <- predict(missing.mod.3, kenya.env, type="response")
 missing.pred.map.kenya <- raster(matrix(missing.pred.kenya, nrow=nrow(kenya.alt), ncol=ncol(kenya.alt), byrow=T), template=kenya.bin)
-missing.pred.bin.kenya <- reclassify(missing.pred.map.kenya, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+missing.pred.bin.kenya <- reclassify(missing.pred.map.kenya, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
 # Combined Kenya and Tanzania
 missing.pred.comb <- predict(missing.mod.3, comb.env, type="response")
 missing.pred.map.comb <- raster(matrix(missing.pred.comb, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.bin)
-missing.pred.bin.comb <- reclassify(missing.pred.map.comb, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+missing.pred.bin.comb <- reclassify(missing.pred.map.comb, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
 
 # Control programme
 # African prediction
 control.pred <- predict(control.mod.4, comb.env, type="response")
 control.pred.map <- raster(matrix(control.pred, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.suit)
-control.pred.bin <- reclassify(control.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+control.pred.bin <- reclassify(control.pred.map, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
 # Kenya prediction
 control.pred.kenya <- predict(control.mod.4, kenya.env, type="response")
 control.pred.map.kenya <- raster(matrix(control.pred.kenya, nrow=nrow(kenya.alt), ncol=ncol(kenya.alt), byrow=T), template=kenya.bin)
-control.pred.bin.kenya <- reclassify(control.pred.map.kenya, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+control.pred.bin.kenya <- reclassify(control.pred.map.kenya, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
 # Combined Kenya and Tanzania
 control.pred.comb <- predict(control.mod.4, comb.env, type="response")
 control.pred.map.comb <- raster(matrix(control.pred.comb, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.bin)
-control.pred.bin.comb <- reclassify(control.pred.map.comb, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+control.pred.bin.comb <- reclassify(control.pred.map.comb, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
 
 ```
 
@@ -533,25 +568,50 @@ for(i in 1:runs){
   full.pres <- full.pres[sample(c(1:length(full.pres[,1])), 300),]
   rm(ab)
 
-  # Heterogenous sampling effort
-  # Take points from the whole of Africa - removing those from within Kenya
-  hetero.pts.africa <- randomPoints(comb.suit, 1000)
-  hetero.pts.africa <- hetero.pts.africa[-which(over(SpatialPoints(hetero.pts.africa, proj4string=CRS(proj4string(kenya))), kenya)$ACP == 1),]
-  hetero.pres.africa <- cbind(hetero.pts.africa, pa = extract(comb.suit, hetero.pts.africa))
-  hetero.pres.africa <- as.data.frame(hetero.pres.africa)
-  ab <- which(hetero.pres.africa$pa == 0)
-  hetero.pres.africa <- hetero.pres.africa[-c(sample(ab, length(ab)*0.6)),]
-  hetero.pres.africa <- hetero.pres.africa[sample(c(1:length(hetero.pres.africa[,1])), 100),]
-  rm(ab)
-  # Take additional points from Kenya and add to data.frame
-  hetero.pts.kenya <- randomPoints(kenya.bin, 1000)
-  hetero.pres.kenya <- cbind(hetero.pts.kenya, pa = extract(kenya.bin, hetero.pts.kenya))
-  hetero.pres.kenya <- as.data.frame(hetero.pres.kenya)
-  ab <- which(hetero.pres.kenya$pa == 0)
-  hetero.pres.kenya <- hetero.pres.kenya[-c(sample(ab, length(ab)*0.6)),]
-  hetero.pres.kenya <- hetero.pres.kenya[sample(c(1:length(hetero.pres.kenya[,1])), 200),]
-  hetero.pres <- rbind(hetero.pres.africa, hetero.pres.kenya)
-  rm(ab)
+# Heterogenous sampling effort
+# Take points from the whole of comb - removing those from within Kenya
+hetero.pts.comb <- randomPoints(comb.suit, 1000)
+hetero.pts.comb <- hetero.pts.comb[-which(over(SpatialPoints(hetero.pts.comb, proj4string=CRS(proj4string(kenya))), kenya)$ACP == 1),]
+hetero.pres.comb <- cbind(hetero.pts.comb, pa = extract(comb.suit, hetero.pts.comb))
+hetero.pres.comb <- as.data.frame(hetero.pres.comb)
+ab <- which(hetero.pres.comb$pa == 0)
+hetero.pres.comb <- hetero.pres.comb[-c(sample(ab, length(ab)*0.6)),]
+hetero.pres.comb <- hetero.pres.comb[sample(c(1:length(hetero.pres.comb[,1])), 50),]
+rm(ab)
+# Take additional points from Kenya and add to data.frame
+hetero.pts.kenya <- randomPoints(kenya.bin, 1000)
+hetero.pres.kenya <- cbind(hetero.pts.kenya, pa = extract(kenya.bin, hetero.pts.kenya))
+hetero.pres.kenya <- as.data.frame(hetero.pres.kenya)
+ab <- which(hetero.pres.kenya$pa == 0)
+hetero.pres.kenya <- hetero.pres.kenya[-c(sample(ab, length(ab)*0.25)),]
+hetero.pres.kenya <- hetero.pres.kenya[sample(c(1:length(hetero.pres.kenya[,1])), 250),]
+hetero.pres <- rbind(hetero.pres.comb, hetero.pres.kenya)
+rm(ab)
+
+## Heterogenous sampling effort
+## Take points from the whole of comb - removing those from above 1500m asl
+#hetero.pts.comb <- randomPoints(comb.suit, 1000)
+#hetero.alt <- extract(comb.alt, hetero.pts.comb)
+#hetero.pts.comb <- hetero.pts.comb[-which(hetero.alt > 1000),]
+#hetero.pres.comb <- cbind(hetero.pts.comb, pa = extract(comb.suit, hetero.pts.comb))
+#hetero.pres.comb <- as.data.frame(hetero.pres.comb)
+#ab <- which(hetero.pres.comb$pa == 0)
+#hetero.pres.comb <- hetero.pres.comb[-c(sample(ab, length(ab)*0.25)),]
+#hetero.pres.comb <- hetero.pres.comb[sample(c(1:length(hetero.pres.comb[,1])), 200),]
+#rm(ab)
+#rm(hetero.alt)
+## Take additional points from above 1500m asl
+#hetero.pts.high <- randomPoints(comb.suit, 1000)
+#hetero.alt <-  extract(comb.alt, hetero.pts.high)
+#hetero.pts.comb <- hetero.pts.comb[-which(hetero.alt <= 1000),]
+#hetero.pres.high <- cbind(hetero.pts.high, pa = extract(comb.suit, hetero.pts.high))
+#hetero.pres.high <- as.data.frame(hetero.pres.high)
+#ab <- which(hetero.pres.high$pa == 0)
+#hetero.pres.high <- hetero.pres.high[-c(sample(ab, length(ab)*0.6)),]
+#hetero.pres.high <- hetero.pres.high[sample(c(1:length(hetero.pres.high[,1])), 100),]
+#hetero.pres <- rbind(hetero.pres.comb, hetero.pres.high)
+#rm(ab)
+#rm(hetero.alt)
 
   # Missing covariates
   missing.pts <- randomPoints(comb.suit, 1000)
@@ -649,25 +709,25 @@ for(i in 1:runs){
   # African prediction
   full.pred <- predict(full.mod, comb.env, type="response")
   full.pred.map <- raster(matrix(full.pred, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.suit)
-  full.pred.bin <- reclassify(full.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+  full.pred.bin <- reclassify(full.pred.map, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
   
  # Heterogenous sampling
   # African prediction
   hetero.pred <- predict(hetero.mod, comb.env, type="response")
   hetero.pred.map <- raster(matrix(hetero.pred, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.suit)
-  hetero.pred.bin <- reclassify(hetero.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+  hetero.pred.bin <- reclassify(hetero.pred.map, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
   
   # Missing covariates
   # African prediction
   missing.pred <- predict(missing.mod, comb.env, type="response")
   missing.pred.map <- raster(matrix(missing.pred, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.suit)
-  missing.pred.bin <- reclassify(missing.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+  missing.pred.bin <- reclassify(missing.pred.map, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
   
   # Control programme
   # African prediction
   control.pred <- predict(control.mod, comb.env, type="response")
   control.pred.map <- raster(matrix(control.pred, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.suit)
-  control.pred.bin <- reclassify(control.pred.map, matrix(c(0,0.49,0,0.5,1,1), nrow=2, ncol=3, byrow=T))
+  control.pred.bin <- reclassify(control.pred.map, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
     
   ### Evaluation
   # Full information
