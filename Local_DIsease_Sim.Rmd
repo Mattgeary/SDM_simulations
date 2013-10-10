@@ -526,6 +526,37 @@ text(0.8,0.4, paste("AUC", round(control.AUC, 2), sep="="))
 par(oldpar)
 ```
 
+```{r Sens_spec, echo=FALSE,  include=FALSE}
+# Full information
+full.pred.test.sens <- prediction(full.test.mod, full.test.vals)
+full.sens.test <- performance(full.pred.test.sens, "sens", "spec")
+
+# Heterogenous sampling effort
+hetero.pred.test.sens <- prediction(hetero.test.mod, hetero.test.vals)
+hetero.sens.test <- performance(hetero.pred.test.sens, "sens", "spec")
+
+# Missing covariates
+missing.pred.test.sens <- prediction(missing.test.mod, missing.test.vals)
+missing.sens.test <- performance(missing.pred.test.sens, "sens", "spec")
+
+# Control programme
+control.pred.test.sens <- prediction(control.test.mod, control.test.vals)
+control.sens.test <- performance(control.pred.test.sens, "sens", "spec")
+```
+
+```{r sens_spec_plot, fig.width=12, fig.height=12, echo=FALSE, fig.cap="Sensitivity and specificity plot for each modelling scenarios with AUC values given on each plot" }
+oldpar <- par(mfrow=c(2,2))
+plot(full.sens.test, main="Full information")
+text(0.8,0.4, paste("AUC", round(full.AUC, 2), sep="="))
+plot(hetero.sens.test, main="Heterogenous sampling effort")
+text(0.8,0.4, paste("AUC", round(hetero.AUC, 2), sep="="))
+plot(missing.sens.test, main="Missing covariates")
+text(0.8,0.4, paste("AUC", round(missing.AUC, 2), sep="="))
+plot(control.sens.test, main="Control programme")
+text(0.8,0.4, paste("AUC", round(control.AUC, 2), sep="="))
+par(oldpar)
+```
+
 By projecting the models onto data for the whole of Africa we can visually assess the performance of these models compared to the true distribution of the virtual disease (Figure 5). One feature of note is that the _missing covariates_ model predicts a noticeably lower probability of presence and for a much wioder area than the other models. Also the model representing a _control programme_ predicts a very low probability of presence in central Africa where we know the disease to be present. The model using _full information_ predicts a wider area than the true distribution of the model to have a high proabability of presence. This could be due to the lqack of temeprature based predictors iin the model of becuse, as precipitation has a threshold over which it is suitable, the model would be imporved with the inclusion of nonlinear relationships. The _heterogenous sampling effort_ model predicts a similar shaped area to the full information model but with a higher probability of presence outside of the true distribution. The _disease spreading_ model predicts apatchy distribution covering some of the areas where the disease is known to be present but several further areas where the disease is absent including north Africa and the middle east. 
 
 ```{r ProbabilityPres, fig.width=12, fig.height=12, echo=FALSE, fig.cap = "Predicted probability of disease presence across Africa for each of the modelling scenarios"}
@@ -544,10 +575,21 @@ The results of these projections are based on randomly placed points so there is
 ```{r Iterations, echo=FALSE,  include=FALSE}
 runs <- 100
 
+conf.int <- function(x){
+  1.96 * (sqrt(var(x)/length(x)))
+}
+
 sim.results <- data.frame(full.area=numeric(runs), full.AUC = numeric(runs), hetero.area=numeric(runs), hetero.AUC = numeric(runs), missing.area=numeric(runs), missing.AUC = numeric(runs), control.area = numeric(runs), control.AUC = numeric(runs))
 
 sim.wrong <-  data.frame(full.false.positive=numeric(runs), full.false.negative = numeric(runs), hetero.false.positive=numeric(runs), hetero.false.negative = numeric(runs), missing.false.positive=numeric(runs), missing.false.negative = numeric(runs), control.false.positive = numeric(runs), control.false.negative = numeric(runs))
 
+sim.tpr <- data.frame(full.1=numeric(runs), full.2 = numeric(runs), full.3 = numeric(runs), hetero.1=numeric(runs), hetero.2 = numeric(runs), hetero.3 = numeric(runs), missing.1=numeric(runs), missing.2 = numeric(runs), missing.3 = numeric(runs), control.1 = numeric(runs), control.2 = numeric(runs), control.3 = numeric(runs))
+
+sim.fpr <- data.frame(full.1=numeric(runs), full.2 = numeric(runs), full.3 = numeric(runs), hetero.1=numeric(runs), hetero.2 = numeric(runs), hetero.3 = numeric(runs), missing.1=numeric(runs), missing.2 = numeric(runs), missing.3 = numeric(runs), control.1 = numeric(runs), control.2 = numeric(runs), control.3 = numeric(runs))
+
+sim.sens <- data.frame(full.1=numeric(runs), full.2 = numeric(runs), full.3 = numeric(runs), hetero.1=numeric(runs), hetero.2 = numeric(runs), hetero.3 = numeric(runs), missing.1=numeric(runs), missing.2 = numeric(runs), missing.3 = numeric(runs), control.1 = numeric(runs), control.2 = numeric(runs), control.3 = numeric(runs))
+
+sim.spec <- data.frame(full.1=numeric(runs), full.2 = numeric(runs), full.3 = numeric(runs), hetero.1=numeric(runs), hetero.2 = numeric(runs), hetero.3 = numeric(runs), missing.1=numeric(runs), missing.2 = numeric(runs), missing.3 = numeric(runs), control.1 = numeric(runs), control.2 = numeric(runs), control.3 = numeric(runs))
 #kenya.results <- data.frame(full.area=numeric(runs), full.AUC = numeric(runs), hetero.area=numeric(runs), hetero.AUC = numeric(runs), missing.area=numeric(runs), missing.AUC = numeric(runs), spread.area = numeric(runs), spread.AUC = numeric(runs), control.area = numeric(runs), control.AUC = numeric(runs))
 
 #kenya.wrong <-  data.frame(full.false.positive=numeric(runs), full.false.negative = numeric(runs), hetero.false.positive=numeric(runs), hetero.false.negative = numeric(runs), missing.false.positive=numeric(runs), missing.false.negative = numeric(runs), spread.false.positive = numeric(runs), spread.false.negative = numeric(runs), control.false.positive = numeric(runs), control.false.negative = numeric(runs))
@@ -558,177 +600,177 @@ sim.wrong <-  data.frame(full.false.positive=numeric(runs), full.false.negative 
 
 for(i in 1:runs){
   
-  ### Fieldwork
-  # Full information
-  full.pts <- randomPoints(comb.suit, 1000)
-  full.pres<- cbind(full.pts, pa = extract(comb.suit, full.pts))
-  full.pres <- as.data.frame(full.pres)
-  ab <- which(full.pres$pa == 0)
-  full.pres <- full.pres[-c(sample(ab, length(ab)*0.6)),]
-  full.pres <- full.pres[sample(c(1:length(full.pres[,1])), 300),]
-  rm(ab)
-
-# Heterogenous sampling effort
-# Take points from the whole of comb - removing those from within Kenya
-hetero.pts.comb <- randomPoints(comb.suit, 1000)
-hetero.pts.comb <- hetero.pts.comb[-which(over(SpatialPoints(hetero.pts.comb, proj4string=CRS(proj4string(kenya))), kenya)$ACP == 1),]
-hetero.pres.comb <- cbind(hetero.pts.comb, pa = extract(comb.suit, hetero.pts.comb))
-hetero.pres.comb <- as.data.frame(hetero.pres.comb)
-ab <- which(hetero.pres.comb$pa == 0)
-hetero.pres.comb <- hetero.pres.comb[-c(sample(ab, length(ab)*0.6)),]
-hetero.pres.comb <- hetero.pres.comb[sample(c(1:length(hetero.pres.comb[,1])), 50),]
-rm(ab)
-# Take additional points from Kenya and add to data.frame
-hetero.pts.kenya <- randomPoints(kenya.bin, 1000)
-hetero.pres.kenya <- cbind(hetero.pts.kenya, pa = extract(kenya.bin, hetero.pts.kenya))
-hetero.pres.kenya <- as.data.frame(hetero.pres.kenya)
-ab <- which(hetero.pres.kenya$pa == 0)
-hetero.pres.kenya <- hetero.pres.kenya[-c(sample(ab, length(ab)*0.25)),]
-hetero.pres.kenya <- hetero.pres.kenya[sample(c(1:length(hetero.pres.kenya[,1])), 250),]
-hetero.pres <- rbind(hetero.pres.comb, hetero.pres.kenya)
-rm(ab)
-
-## Heterogenous sampling effort
-## Take points from the whole of comb - removing those from above 1500m asl
-#hetero.pts.comb <- randomPoints(comb.suit, 1000)
-#hetero.alt <- extract(comb.alt, hetero.pts.comb)
-#hetero.pts.comb <- hetero.pts.comb[-which(hetero.alt > 1000),]
-#hetero.pres.comb <- cbind(hetero.pts.comb, pa = extract(comb.suit, hetero.pts.comb))
-#hetero.pres.comb <- as.data.frame(hetero.pres.comb)
-#ab <- which(hetero.pres.comb$pa == 0)
-#hetero.pres.comb <- hetero.pres.comb[-c(sample(ab, length(ab)*0.25)),]
-#hetero.pres.comb <- hetero.pres.comb[sample(c(1:length(hetero.pres.comb[,1])), 200),]
-#rm(ab)
-#rm(hetero.alt)
-## Take additional points from above 1500m asl
-#hetero.pts.high <- randomPoints(comb.suit, 1000)
-#hetero.alt <-  extract(comb.alt, hetero.pts.high)
-#hetero.pts.comb <- hetero.pts.comb[-which(hetero.alt <= 1000),]
-#hetero.pres.high <- cbind(hetero.pts.high, pa = extract(comb.suit, hetero.pts.high))
-#hetero.pres.high <- as.data.frame(hetero.pres.high)
-#ab <- which(hetero.pres.high$pa == 0)
-#hetero.pres.high <- hetero.pres.high[-c(sample(ab, length(ab)*0.6)),]
-#hetero.pres.high <- hetero.pres.high[sample(c(1:length(hetero.pres.high[,1])), 100),]
-#hetero.pres <- rbind(hetero.pres.comb, hetero.pres.high)
-#rm(ab)
-#rm(hetero.alt)
-
-  # Missing covariates
-  missing.pts <- randomPoints(comb.suit, 1000)
-  missing.pres<- cbind(missing.pts, pa = extract(comb.suit, missing.pts))
-  missing.pres <- as.data.frame(missing.pres)
-  ab <- which(missing.pres$pa == 0)
-  missing.pres <- missing.pres[-c(sample(ab, length(ab)*0.6)),]
-  missing.pres <- missing.pres[sample(c(1:length(missing.pres[,1])), 300),]
-  rm(ab)
-
-  # Control
-  # Kenya points where disease is present first
-  control.pts.kenya <- randomPoints(kenya.bin, 1000)
-  control.pres.kenya<- cbind(control.pts.kenya, pa = extract(kenya.bin, control.pts.kenya))
-  control.pres.kenya <- as.data.frame(control.pres.kenya)
-  ab <- which(control.pres.kenya$pa == 0)
-  control.pres.kenya <- control.pres.kenya[-c(sample(ab, length(ab)*0.6)),]
-  control.pres.kenya <-control.pres.kenya[sample(c(1:length(control.pres.kenya[,1])), 150),]
-  # Tanzania points set to 0 to simulate a successful control programme and combine data
-  control.pts.tanzania <- randomPoints(tanzania.bin, 1000)
-  control.pres.tanzania<- cbind(control.pts.tanzania, pa = 0)
-  control.pres.tanzania <- as.data.frame(control.pres.tanzania)
-  ab <- which(control.pres.tanzania$pa == 0)
-  control.pres.tanzania <- control.pres.tanzania[-c(sample(ab, length(ab)*0.6)),]
-  control.pres.tanzania <-control.pres.tanzania[sample(c(1:length(control.pres.tanzania[,1])), 150),]
-  control.pres <- rbind(control.pres.kenya, control.pres.tanzania)
-  # Take samples from kenya
-  kenya.points <- randomPoints(kenya.bin, 500)
-  kenya.pres<- cbind(kenya.points, pa = extract(kenya.bin, kenya.points))
-  kenya.pres <- as.data.frame(kenya.pres)
-  ab <- which(kenya.pres$pa == 0)
-  kenya.pres <- kenya.pres[-c(sample(ab, length(ab)*0.6)),]
-  rm(ab)
+    ### Fieldwork
+    # Full information
+    full.pts <- randomPoints(comb.suit, 1000)
+    full.pres<- cbind(full.pts, pa = extract(comb.suit, full.pts))
+    full.pres <- as.data.frame(full.pres)
+    ab <- which(full.pres$pa == 0)
+    full.pres <- full.pres[-c(sample(ab, length(ab)*0.6)),]
+    full.pres <- full.pres[sample(c(1:length(full.pres[,1])), 300),]
+    rm(ab)
   
-  ### Environmental data
-  # Full information
-  full.data <- data.frame(presence = numeric(length(full.pres$pa)),mean.temp.yr = numeric(length(full.pres$pa)), min.temp.yr=numeric(length(full.pres$pa)),max.temp.yr=numeric(length(full.pres$pa)),precip.yr = numeric(length(full.pres$pa)), wet.qtr=numeric(length(full.pres$pa)), africa.alt=numeric(length(full.pres$pa)))
-
-  full.data$presence <- full.pres$pa
-  full.data$mean.temp.yr <- extract(mean.temp.yr, full.pres[,1:2])
-  full.data$max.temp.yr <- extract(max.temp.yr, full.pres[,1:2])
-  full.data$min.temp.yr <- extract(min.temp.yr, full.pres[,1:2])
-  full.data$precip.yr <- extract(precip.yr, full.pres[,1:2])
-  full.data$wet.qtr <- extract(wet.qtr, full.pres[,1:2])
-  full.data$africa.alt <- extract(africa.alt, full.pres[,1:2])
-
   # Heterogenous sampling effort
-  hetero.data <- data.frame(presence = numeric(length(hetero.pres$pa)),mean.temp.yr = numeric(length(hetero.pres$pa)), min.temp.yr=numeric(length(hetero.pres$pa)),max.temp.yr=numeric(length(hetero.pres$pa)), precip.yr = numeric(length(hetero.pres$pa)), wet.qtr=numeric(length(full.pres$pa)), africa.alt=numeric(length(hetero.pres$pa)))
-
-  hetero.data$presence <- hetero.pres$pa
-  hetero.data$mean.temp.yr <- extract(mean.temp.yr, hetero.pres[,1:2])
-  hetero.data$max.temp.yr <- extract(max.temp.yr, hetero.pres[,1:2])
-  hetero.data$min.temp.yr <- extract(min.temp.yr, hetero.pres[,1:2])
-  hetero.data$precip.yr <- extract(precip.yr, hetero.pres[,1:2])
-  hetero.data$wet.qtr <- extract(wet.qtr, hetero.pres[,1:2])
-  hetero.data$africa.alt <- extract(africa.alt, hetero.pres[,1:2])
-
-  # Missing covariates
-  missing.data <- data.frame(presence = numeric(length(missing.pres$pa)),mean.temp.yr = numeric(length(missing.pres$pa)), min.temp.yr=numeric(length(missing.pres$pa)),max.temp.yr=numeric(length(missing.pres$pa)),precip.yr = numeric(length(missing.pres$pa)), wet.qtr=numeric(length(full.pres$pa)), africa.alt=numeric(length(missing.pres$pa)))
-
-  missing.data$presence <- missing.pres$pa
-  missing.data$mean.temp.yr <- extract(mean.temp.yr, missing.pres[,1:2])
-  missing.data$max.temp.yr <- extract(max.temp.yr, missing.pres[,1:2])
-  missing.data$min.temp.yr <- extract(min.temp.yr, missing.pres[,1:2])
-  missing.data$precip.yr <- extract(precip.yr, missing.pres[,1:2])
-  missing.data$wet.qtr <- extract(wet.qtr, full.pres[,1:2])
-  missing.data$africa.alt <- extract(africa.alt, missing.pres[,1:2])
-
-  # Control
-  control.data <- data.frame(presence = numeric(length(control.pres$pa)),mean.temp.yr = numeric(length(control.pres$pa)), min.temp.yr=numeric(length(control.pres$pa)),max.temp.yr=numeric(length(control.pres$pa)),precip.yr = numeric(length(control.pres$pa)), wet.qtr=numeric(length(full.pres$pa)), africa.alt=numeric(length(control.pres$pa)))
-
-  control.data$presence <- control.pres$pa
-  control.data$mean.temp.yr <- extract(mean.temp.yr, control.pres[,1:2])
-  control.data$max.temp.yr <- extract(max.temp.yr, control.pres[,1:2])
-  control.data$min.temp.yr <- extract(min.temp.yr, control.pres[,1:2])
-  control.data$precip.yr <- extract(precip.yr, control.pres[,1:2])
-  control.data$wet.qtr <- extract(wet.qtr, full.pres[,1:2])
-  control.data$africa.alt <- extract(africa.alt, control.pres[,1:2])
-
-  ### Modelling
-  # Full information
-  full.mod <- glm(presence ~ precip.yr * africa.alt, data=full.data, family="binomial")
-
-  # Heterogenous sampling effort
-  hetero.mod <- glm(presence ~ precip.yr * africa.alt, data=hetero.data, family="binomial")
-
-  # Missing covariates
-  missing.mod <- glm(presence ~ wet.qtr + africa.alt, data=missing.data, family="binomial")
-
-  # Control programme
-  control.mod <- glm(presence ~ precip.yr * africa.alt, data=control.data, family="binomial")
+  # Take points from the whole of comb - removing those from within Kenya
+  hetero.pts.comb <- randomPoints(comb.suit, 1000)
+  hetero.pts.comb <- hetero.pts.comb[-which(over(SpatialPoints(hetero.pts.comb, proj4string=CRS(proj4string(kenya))), kenya)$ACP == 1),]
+  hetero.pres.comb <- cbind(hetero.pts.comb, pa = extract(comb.suit, hetero.pts.comb))
+  hetero.pres.comb <- as.data.frame(hetero.pres.comb)
+  ab <- which(hetero.pres.comb$pa == 0)
+  hetero.pres.comb <- hetero.pres.comb[-c(sample(ab, length(ab)*0.6)),]
+  hetero.pres.comb <- hetero.pres.comb[sample(c(1:length(hetero.pres.comb[,1])), 50),]
+  rm(ab)
+  # Take additional points from Kenya and add to data.frame
+  hetero.pts.kenya <- randomPoints(kenya.bin, 1000)
+  hetero.pres.kenya <- cbind(hetero.pts.kenya, pa = extract(kenya.bin, hetero.pts.kenya))
+  hetero.pres.kenya <- as.data.frame(hetero.pres.kenya)
+  ab <- which(hetero.pres.kenya$pa == 0)
+  hetero.pres.kenya <- hetero.pres.kenya[-c(sample(ab, length(ab)*0.25)),]
+  hetero.pres.kenya <- hetero.pres.kenya[sample(c(1:length(hetero.pres.kenya[,1])), 250),]
+  hetero.pres <- rbind(hetero.pres.comb, hetero.pres.kenya)
+  rm(ab)
   
-  ### Predictions
-  # Full information
-  # African prediction
-  full.pred <- predict(full.mod, comb.env, type="response")
-  full.pred.map <- raster(matrix(full.pred, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.suit)
-  full.pred.bin <- reclassify(full.pred.map, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
+  ## Heterogenous sampling effort
+  ## Take points from the whole of comb - removing those from above 1500m asl
+  #hetero.pts.comb <- randomPoints(comb.suit, 1000)
+  #hetero.alt <- extract(comb.alt, hetero.pts.comb)
+  #hetero.pts.comb <- hetero.pts.comb[-which(hetero.alt > 1000),]
+  #hetero.pres.comb <- cbind(hetero.pts.comb, pa = extract(comb.suit, hetero.pts.comb))
+  #hetero.pres.comb <- as.data.frame(hetero.pres.comb)
+  #ab <- which(hetero.pres.comb$pa == 0)
+  #hetero.pres.comb <- hetero.pres.comb[-c(sample(ab, length(ab)*0.25)),]
+  #hetero.pres.comb <- hetero.pres.comb[sample(c(1:length(hetero.pres.comb[,1])), 200),]
+  #rm(ab)
+  #rm(hetero.alt)
+  ## Take additional points from above 1500m asl
+  #hetero.pts.high <- randomPoints(comb.suit, 1000)
+  #hetero.alt <-  extract(comb.alt, hetero.pts.high)
+  #hetero.pts.comb <- hetero.pts.comb[-which(hetero.alt <= 1000),]
+  #hetero.pres.high <- cbind(hetero.pts.high, pa = extract(comb.suit, hetero.pts.high))
+  #hetero.pres.high <- as.data.frame(hetero.pres.high)
+  #ab <- which(hetero.pres.high$pa == 0)
+  #hetero.pres.high <- hetero.pres.high[-c(sample(ab, length(ab)*0.6)),]
+  #hetero.pres.high <- hetero.pres.high[sample(c(1:length(hetero.pres.high[,1])), 100),]
+  #hetero.pres <- rbind(hetero.pres.comb, hetero.pres.high)
+  #rm(ab)
+  #rm(hetero.alt)
   
- # Heterogenous sampling
-  # African prediction
-  hetero.pred <- predict(hetero.mod, comb.env, type="response")
-  hetero.pred.map <- raster(matrix(hetero.pred, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.suit)
-  hetero.pred.bin <- reclassify(hetero.pred.map, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
+    # Missing covariates
+    missing.pts <- randomPoints(comb.suit, 1000)
+    missing.pres<- cbind(missing.pts, pa = extract(comb.suit, missing.pts))
+    missing.pres <- as.data.frame(missing.pres)
+    ab <- which(missing.pres$pa == 0)
+    missing.pres <- missing.pres[-c(sample(ab, length(ab)*0.6)),]
+    missing.pres <- missing.pres[sample(c(1:length(missing.pres[,1])), 300),]
+    rm(ab)
   
-  # Missing covariates
-  # African prediction
-  missing.pred <- predict(missing.mod, comb.env, type="response")
-  missing.pred.map <- raster(matrix(missing.pred, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.suit)
-  missing.pred.bin <- reclassify(missing.pred.map, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
-  
-  # Control programme
-  # African prediction
-  control.pred <- predict(control.mod, comb.env, type="response")
-  control.pred.map <- raster(matrix(control.pred, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.suit)
-  control.pred.bin <- reclassify(control.pred.map, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
+    # Control
+    # Kenya points where disease is present first
+    control.pts.kenya <- randomPoints(kenya.bin, 1000)
+    control.pres.kenya<- cbind(control.pts.kenya, pa = extract(kenya.bin, control.pts.kenya))
+    control.pres.kenya <- as.data.frame(control.pres.kenya)
+    ab <- which(control.pres.kenya$pa == 0)
+    control.pres.kenya <- control.pres.kenya[-c(sample(ab, length(ab)*0.6)),]
+    control.pres.kenya <-control.pres.kenya[sample(c(1:length(control.pres.kenya[,1])), 150),]
+    # Tanzania points set to 0 to simulate a successful control programme and combine data
+    control.pts.tanzania <- randomPoints(tanzania.bin, 1000)
+    control.pres.tanzania<- cbind(control.pts.tanzania, pa = 0)
+    control.pres.tanzania <- as.data.frame(control.pres.tanzania)
+    ab <- which(control.pres.tanzania$pa == 0)
+    control.pres.tanzania <- control.pres.tanzania[-c(sample(ab, length(ab)*0.6)),]
+    control.pres.tanzania <-control.pres.tanzania[sample(c(1:length(control.pres.tanzania[,1])), 150),]
+    control.pres <- rbind(control.pres.kenya, control.pres.tanzania)
+    # Take samples from kenya
+    kenya.points <- randomPoints(kenya.bin, 500)
+    kenya.pres<- cbind(kenya.points, pa = extract(kenya.bin, kenya.points))
+    kenya.pres <- as.data.frame(kenya.pres)
+    ab <- which(kenya.pres$pa == 0)
+    kenya.pres <- kenya.pres[-c(sample(ab, length(ab)*0.6)),]
+    rm(ab)
     
+    ### Environmental data
+    # Full information
+    full.data <- data.frame(presence = numeric(length(full.pres$pa)),mean.temp.yr = numeric(length(full.pres$pa)), min.temp.yr=numeric(length(full.pres$pa)),max.temp.yr=numeric(length(full.pres$pa)),precip.yr = numeric(length(full.pres$pa)), wet.qtr=numeric(length(full.pres$pa)), africa.alt=numeric(length(full.pres$pa)))
+  
+    full.data$presence <- full.pres$pa
+    full.data$mean.temp.yr <- extract(mean.temp.yr, full.pres[,1:2])
+    full.data$max.temp.yr <- extract(max.temp.yr, full.pres[,1:2])
+    full.data$min.temp.yr <- extract(min.temp.yr, full.pres[,1:2])
+    full.data$precip.yr <- extract(precip.yr, full.pres[,1:2])
+    full.data$wet.qtr <- extract(wet.qtr, full.pres[,1:2])
+    full.data$africa.alt <- extract(africa.alt, full.pres[,1:2])
+  
+    # Heterogenous sampling effort
+    hetero.data <- data.frame(presence = numeric(length(hetero.pres$pa)),mean.temp.yr = numeric(length(hetero.pres$pa)), min.temp.yr=numeric(length(hetero.pres$pa)),max.temp.yr=numeric(length(hetero.pres$pa)), precip.yr = numeric(length(hetero.pres$pa)), wet.qtr=numeric(length(full.pres$pa)), africa.alt=numeric(length(hetero.pres$pa)))
+  
+    hetero.data$presence <- hetero.pres$pa
+    hetero.data$mean.temp.yr <- extract(mean.temp.yr, hetero.pres[,1:2])
+    hetero.data$max.temp.yr <- extract(max.temp.yr, hetero.pres[,1:2])
+    hetero.data$min.temp.yr <- extract(min.temp.yr, hetero.pres[,1:2])
+    hetero.data$precip.yr <- extract(precip.yr, hetero.pres[,1:2])
+    hetero.data$wet.qtr <- extract(wet.qtr, hetero.pres[,1:2])
+    hetero.data$africa.alt <- extract(africa.alt, hetero.pres[,1:2])
+  
+    # Missing covariates
+    missing.data <- data.frame(presence = numeric(length(missing.pres$pa)),mean.temp.yr = numeric(length(missing.pres$pa)), min.temp.yr=numeric(length(missing.pres$pa)),max.temp.yr=numeric(length(missing.pres$pa)),precip.yr = numeric(length(missing.pres$pa)), wet.qtr=numeric(length(full.pres$pa)), africa.alt=numeric(length(missing.pres$pa)))
+  
+    missing.data$presence <- missing.pres$pa
+    missing.data$mean.temp.yr <- extract(mean.temp.yr, missing.pres[,1:2])
+    missing.data$max.temp.yr <- extract(max.temp.yr, missing.pres[,1:2])
+    missing.data$min.temp.yr <- extract(min.temp.yr, missing.pres[,1:2])
+    missing.data$precip.yr <- extract(precip.yr, missing.pres[,1:2])
+    missing.data$wet.qtr <- extract(wet.qtr, full.pres[,1:2])
+    missing.data$africa.alt <- extract(africa.alt, missing.pres[,1:2])
+  
+    # Control
+    control.data <- data.frame(presence = numeric(length(control.pres$pa)),mean.temp.yr = numeric(length(control.pres$pa)), min.temp.yr=numeric(length(control.pres$pa)),max.temp.yr=numeric(length(control.pres$pa)),precip.yr = numeric(length(control.pres$pa)), wet.qtr=numeric(length(full.pres$pa)), africa.alt=numeric(length(control.pres$pa)))
+  
+    control.data$presence <- control.pres$pa
+    control.data$mean.temp.yr <- extract(mean.temp.yr, control.pres[,1:2])
+    control.data$max.temp.yr <- extract(max.temp.yr, control.pres[,1:2])
+    control.data$min.temp.yr <- extract(min.temp.yr, control.pres[,1:2])
+    control.data$precip.yr <- extract(precip.yr, control.pres[,1:2])
+    control.data$wet.qtr <- extract(wet.qtr, full.pres[,1:2])
+    control.data$africa.alt <- extract(africa.alt, control.pres[,1:2])
+  
+    ### Modelling
+    # Full information
+    full.mod <- glm(presence ~ precip.yr * africa.alt, data=full.data, family="binomial")
+  
+    # Heterogenous sampling effort
+    hetero.mod <- glm(presence ~ precip.yr * africa.alt, data=hetero.data, family="binomial")
+  
+    # Missing covariates
+    missing.mod <- glm(presence ~ wet.qtr + africa.alt, data=missing.data, family="binomial")
+  
+    # Control programme
+    control.mod <- glm(presence ~ precip.yr * africa.alt, data=control.data, family="binomial")
+    
+    ### Predictions
+    # Full information
+    # African prediction
+    full.pred <- predict(full.mod, comb.env, type="response")
+    full.pred.map <- raster(matrix(full.pred, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.suit)
+    full.pred.bin <- reclassify(full.pred.map, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
+    
+   # Heterogenous sampling
+    # African prediction
+    hetero.pred <- predict(hetero.mod, comb.env, type="response")
+    hetero.pred.map <- raster(matrix(hetero.pred, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.suit)
+    hetero.pred.bin <- reclassify(hetero.pred.map, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
+    
+    # Missing covariates
+    # African prediction
+    missing.pred <- predict(missing.mod, comb.env, type="response")
+    missing.pred.map <- raster(matrix(missing.pred, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.suit)
+    missing.pred.bin <- reclassify(missing.pred.map, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
+    
+    # Control programme
+    # African prediction
+    control.pred <- predict(control.mod, comb.env, type="response")
+    control.pred.map <- raster(matrix(control.pred, nrow=nrow(comb.alt), ncol=ncol(comb.alt), byrow=T), template=comb.suit)
+    control.pred.bin <- reclassify(control.pred.map, matrix(c(0,0.649999,0,0.65,1,1), nrow=2, ncol=3, byrow=T))
+      
   ### Evaluation
   # Full information
   # Africa extent
@@ -739,12 +781,18 @@ rm(ab)
   full.test.pts <- randomPoints(full.pred.map, 1000)
   full.test.mod <- extract(full.pred.bin, full.test.pts)
   full.test.vals <- extract(comb.suit, full.test.pts)
-
+  
   full.pred.test <- prediction(full.test.mod, full.test.vals)
   full.perf.test <- performance(full.pred.test, "tpr","fpr")
+  sim.tpr$full.1[i] <- full.perf.test@x.values[[1]][1]
+  sim.tpr$full.2[i] <- full.perf.test@x.values[[1]][2]
+  sim.tpr$full.3[i] <- full.perf.test@x.values[[1]][3]
+  sim.fpr$full.1[i] <- full.perf.test@y.values[[1]][1]
+  sim.fpr$full.2[i] <- full.perf.test@y.values[[1]][2]
+  sim.fpr$full.3[i] <- full.perf.test@y.values[[1]][3]
   sim.results$full.AUC[i] <- performance(full.pred.test, "auc")@y.values[[1]]
   
-   # Heterogenous sampling effort
+  # Heterogenous sampling effort
   # Africa extent
   dif <- hetero.pred.bin - comb.suit
   sim.results$hetero.area[i] <- length(which(as.matrix(dif== 0)))/length(as.matrix(dif))
@@ -753,9 +801,15 @@ rm(ab)
   hetero.test.pts <- randomPoints(hetero.pred.map, 1000)
   hetero.test.mod <- extract(hetero.pred.bin, hetero.test.pts)
   hetero.test.vals <- extract(comb.suit, hetero.test.pts)
-
+  
   hetero.pred.test <- prediction(hetero.test.mod, hetero.test.vals)
   hetero.perf.test <- performance(hetero.pred.test, "tpr","fpr")
+  sim.tpr$hetero.1[i] <- hetero.perf.test@x.values[[1]][1]
+  sim.tpr$hetero.2[i] <- hetero.perf.test@x.values[[1]][2]
+  sim.tpr$hetero.3[i] <- hetero.perf.test@x.values[[1]][3]
+  sim.fpr$hetero.1[i] <- hetero.perf.test@y.values[[1]][1]
+  sim.fpr$hetero.2[i] <- hetero.perf.test@y.values[[1]][2]
+  sim.fpr$hetero.3[i] <- hetero.perf.test@y.values[[1]][3]
   sim.results$hetero.AUC[i] <- performance(hetero.pred.test, "auc")@y.values[[1]]
   
   
@@ -768,12 +822,18 @@ rm(ab)
   missing.test.pts <- randomPoints(missing.pred.map, 1000)
   missing.test.mod <- extract(missing.pred.bin, missing.test.pts)
   missing.test.vals <- extract(comb.suit, missing.test.pts)
-
+  
   missing.pred.test <- prediction(missing.test.mod, missing.test.vals)
   missing.perf.test <- performance(missing.pred.test, "tpr","fpr")
+  sim.tpr$missing.1[i] <- missing.perf.test@x.values[[1]][1]
+  sim.tpr$missing.2[i] <- missing.perf.test@x.values[[1]][2]
+  sim.tpr$missing.3[i] <- missing.perf.test@x.values[[1]][3]
+  sim.fpr$missing.1[i] <- missing.perf.test@y.values[[1]][1]
+  sim.fpr$missing.2[i] <- missing.perf.test@y.values[[1]][2]
+  sim.fpr$missing.3[i] <- missing.perf.test@y.values[[1]][3]
   sim.results$missing.AUC[i] <- performance(missing.pred.test, "auc")@y.values[[1]]
   
-   # Control programme
+  # Control programme
   # Africa extent
   dif <- control.pred.bin - comb.suit
   sim.results$control.area[i] <- length(which(as.matrix(dif== 0)))/length(as.matrix(dif))
@@ -782,11 +842,67 @@ rm(ab)
   control.test.pts <- randomPoints(control.pred.map, 1000)
   control.test.mod <- extract(control.pred.bin, control.test.pts)
   control.test.vals <- extract(comb.suit, control.test.pts)
-
+  
   control.pred.test <- prediction(control.test.mod, control.test.vals)
   control.perf.test <- performance(control.pred.test, "tpr","fpr")
+  sim.tpr$control.1[i] <- control.perf.test@x.values[[1]][1]
+  sim.tpr$control.2[i] <- control.perf.test@x.values[[1]][2]
+  sim.tpr$control.3[i] <- control.perf.test@x.values[[1]][3]
+  sim.fpr$control.1[i] <- control.perf.test@y.values[[1]][1]
+  sim.fpr$control.2[i] <- control.perf.test@y.values[[1]][2]
+  sim.fpr$control.3[i] <- control.perf.test@y.values[[1]][3]
   sim.results$control.AUC[i] <- performance(control.pred.test, "auc")@y.values[[1]]
-
+  
+  # Sensitivity and specificity
+  # Full information
+  full.pred.test.sens <- prediction(full.test.mod, full.test.vals)
+  full.sens.test <- performance(full.pred.test.sens, "sens", "spec")
+  sim.sens$full.1[i] <- full.sens.test@x.values[[1]][1]
+  sim.sens$full.2[i] <- full.sens.test@x.values[[1]][2]
+  sim.sens$full.3[i] <- full.sens.test@x.values[[1]][3]
+  sim.spec$full.1[i] <- full.sens.test@y.values[[1]][1]
+  sim.spec$full.2[i] <- full.sens.test@y.values[[1]][2]
+  sim.spec$full.3[i] <- full.sens.test@y.values[[1]][3]
+  
+  # Heterogenous sampling effort
+  hetero.pred.test.sens <- prediction(hetero.test.mod, hetero.test.vals)
+  hetero.sens.test <- performance(hetero.pred.test.sens, "sens", "spec")
+  sim.sens$hetero.1[i] <- hetero.sens.test@x.values[[1]][1]
+  sim.sens$hetero.2[i] <- hetero.sens.test@x.values[[1]][2]
+  sim.sens$hetero.3[i] <- hetero.sens.test@x.values[[1]][3]
+  sim.spec$hetero.1[i] <- hetero.sens.test@y.values[[1]][1]
+  sim.spec$hetero.2[i] <- hetero.sens.test@y.values[[1]][2]
+  sim.spec$hetero.3[i] <- hetero.sens.test@y.values[[1]][3]
+  
+  # Missing covariates
+  missing.pred.test.sens <- prediction(missing.test.mod, missing.test.vals)
+  missing.sens.test <- performance(missing.pred.test.sens, "sens", "spec")
+  sim.sens$missing.1[i] <- missing.sens.test@x.values[[1]][1]
+  sim.sens$missing.2[i] <- missing.sens.test@x.values[[1]][2]
+  sim.sens$missing.3[i] <- missing.sens.test@x.values[[1]][3]
+  sim.spec$missing.1[i] <- missing.sens.test@y.values[[1]][1]
+  sim.spec$missing.2[i] <- missing.sens.test@y.values[[1]][2]
+  sim.spec$missing.3[i] <- missing.sens.test@y.values[[1]][3]
+  
+  # Control programme
+  control.pred.test.sens <- prediction(control.test.mod, control.test.vals)
+  control.sens.test <- performance(control.pred.test.sens, "sens", "spec")
+  sim.sens$control.1[i] <- control.sens.test@x.values[[1]][1]
+  sim.sens$control.2[i] <- control.sens.test@x.values[[1]][2]
+  sim.sens$control.3[i] <- control.sens.test@x.values[[1]][3]
+  sim.spec$control.1[i] <- control.sens.test@y.values[[1]][1]
+  sim.spec$control.2[i] <- control.sens.test@y.values[[1]][2]
+  sim.spec$control.3[i] <- control.sens.test@y.values[[1]][3]
+  
+  # Mean values
+    mean.tpr <- apply(sim.tpr, 2, mean)
+    mean.fpr <- apply(sim.fpr, 2, mean)
+    mean.sens <- apply(sim.sens, 2, mean)
+    mean.spec <- apply(sim.spec, 2, mean)
+    conf.tpr <- apply(sim.tpr, 2, conf.int)
+    conf.fpr <- apply(sim.fpr, 2, conf.int)
+    conf.sens <- apply(sim.sens, 2, conf.int)
+    conf.spec <- apply(sim.spec, 2, conf.int)
 }
 
 ```
