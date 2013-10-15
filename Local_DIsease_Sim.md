@@ -88,6 +88,12 @@ ROC curves and AUC scores for these modelling scenarios (Figure 4) suggest that 
 ![ROC curves for each modelling scenarios with AUC values given on each plot](figure/ROC.png) 
 
 
+
+
+
+![Sensitivity and specificity plot for each modelling scenarios with AUC values given on each plot](figure/sens_spec_plot.png) 
+
+
 By projecting the models onto data for the whole of Africa we can visually assess the performance of these models compared to the true distribution of the virtual disease (Figure 5). One feature of note is that the _missing covariates_ model predicts a noticeably lower probability of presence and for a much wioder area than the other models. Also the model representing a _control programme_ predicts a very low probability of presence in central Africa where we know the disease to be present. The model using _full information_ predicts a wider area than the true distribution of the model to have a high proabability of presence. This could be due to the lqack of temeprature based predictors iin the model of becuse, as precipitation has a threshold over which it is suitable, the model would be imporved with the inclusion of nonlinear relationships. The _heterogenous sampling effort_ model predicts a similar shaped area to the full information model but with a higher probability of presence outside of the true distribution. The _disease spreading_ model predicts apatchy distribution covering some of the areas where the disease is known to be present but several further areas where the disease is absent including north Africa and the middle east. 
 
 ![Predicted probability of disease presence across Africa for each of the modelling scenarios](figure/ProbabilityPres.png) 
@@ -107,4 +113,10 @@ Overall, the full model seems to perform the best in terms of the proportion of 
 Across Africa (Figure 8a & b) the full model and the heterogenous sampling effort model have low values for both false positive predictions (Figure 8a) and false negative predictions (Figure 8b). The missing covariate model has low fasle negatives but high false positives, the spreading diesease model has relativelt high false negatives and low false positives and the control measures model has high numbers of both. At the extent of Kenya both the full information model and the heterogenous sampling effort model have low numbers of false positives (Figure 9a) and moderate numbers of false negatives (Figure 9b) the proportion of which are highly variable for the heterogenous sampling effort model. The missing covariates model has a low number of false positives and a high number of false negatives. The spreading disease model and the control measures model both have high proportions of fasle positives  but where the spreading disease model has low false negatives the control measures model has a larger proportion. In the combined Kenya and Tanzania region the full information model has highly variable proportions of false positives (Figure 10a) and a low proportion of false negatives (Figure 10b). The heterogenous sampling effort model and the spreading disease models have low proportions of both. The missing covariates and control measures model both have a low proportion of false positives but a high proportion of false negatives.
 
 ![Results of 100 simulations for the five scenarios showing (a) Proportion of the study area correct, (b) AUC scores, (c) proportion of false positives and (d) proportion of false negatives across Africa](figure/iterationplotafrica.png) 
+
+
+![Mean ROC curves with 95% confidence intervals from 100 disease modelling simulations of the five scenarios showing (a) Full information, (b) Heterogenous sampling effort, (c) Missing covariates and (d) Disease spreading/Control programme](figure/ROC_conf_plots.png) 
+
+
+![Mean sensitivity and specificity plots with 95% confidence intervals from 100 disease modelling simulations of the five scenarios showing (a) Full information, (b) Heterogenous sampling effort, (c) Missing covariates and (d) Disease spreading/Control programme](figure/sens_spec_plots.png) 
 
