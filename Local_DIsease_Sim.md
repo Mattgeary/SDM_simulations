@@ -9,6 +9,9 @@ Disease SDMs with smaller extent
 
 
 
+
+
+
 The folling demonstrates the potential pitfalls in modelling disease distributions using a virtual disease. The disease niche is set according to several environmental criteria and is modelled in a number of simulated scenarios. Some of the problems demonstrated below are well known in the ecological literature but the nature of these problems is often framed differently in epidemiological research and so should be highlighted in this particular context. The criteria for suitabile areas for this virtual disease will be as follows:
 
 * Mean temperature between 18.0 and 22.5 degrees C
@@ -100,7 +103,6 @@ By projecting the models onto data for the whole of Africa we can visually asses
 
 
 The results of these projections are based on randomly placed points so there is the potential for variations in the modelling outcomes fo each scenario. To investigate the variability in these results and compare across scenarios the models are repeated 100 times each and assessed in terms of AUC azlong with the proportion of the study area correct, the proportion of false negative produced and the proportion of false positives.
-
 
 
 

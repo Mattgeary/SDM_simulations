@@ -10,6 +10,20 @@ library(rgdal)
 library(ROCR)
 ```
 
+```{r plot.info, echo=FALSE,  include=FALSE}
+# Panel labelling function
+Panel <- function(panel)
+{
+  par(xpd=NA)
+  u <- par('usr')
+  text(u[1]-(u[2]-u[1])*.01, u[4]+(u[4]-u[3])*.1, panel, cex=2)
+  par(xpd=FALSE)
+}
+
+# Names for results plots
+plot.labs <- c("Full", "Hetero", "Missing", "Control")
+```
+
 ```{r data.input, echo=FALSE, include=FALSE}
 # Read in continental outline
 africa.shp <- readShapeSpatial("africa.shp", proj4string=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"))
@@ -20,9 +34,10 @@ malawi <- getData('GADM', country='MWI', level=0)
 mozambique <- getData('GADM', country='MOZ', level=0)
 Zimbabwe <- getData('GADM', country='ZWE', level=0)
 Zambia <- getData('GADM', country='ZMB', level=0)
-# Congo
-# Botswana
-# South Africa
+# Congo <- getData('GADM', country='COD', level=0)
+# Botswana <- getData('GADM', country='BWA', level=0)
+# S.Africa <- getData('GADM', country='ZAF', level=0)
+
 bound.box <- matrix(c(21.99937, -26.86869, 41.88752, -26.8686, 41.88752,  4.633819, 21.99937, 4.633819), nrow=4, ncol=2, byrow=2)
 
 # Read in global data
@@ -220,7 +235,8 @@ ab <- which(control.pres.kenya$pa == 0)
 control.pres.kenya <- control.pres.kenya[-c(sample(ab, length(ab)*0.6)),]
 control.pres.kenya <-control.pres.kenya[sample(c(1:length(control.pres.kenya[,1])), 150),]
 # Tanzania points set to 0 to simulate a successful control programme and combine data
-control.pts.tanzania <- randomPoints(tanzania.bin, 1000)
+control.pts.tanzania <- randomPoints(comb.suit, 1000)
+control.pts.tanzania <-  control.pts.tanzania[-which(over(SpatialPoints(control.pts.tanzania, proj4string=CRS(proj4string(kenya))), kenya)$ACP == 1),]
 control.pres.tanzania<- cbind(control.pts.tanzania, pa = 0)
 control.pres.tanzania <- as.data.frame(control.pres.tanzania)
 ab <- which(control.pres.tanzania$pa == 0)
@@ -242,16 +258,18 @@ rm(ab)
 
 ```{r FieldworkFigs, fig.width=8, fig.height=12, echo=FALSE, fig.cap="Fieldwork maps for the disease modelling scenarios. Positive records are shown in red and negative records in black"}
 oldpar <- par(mfrow=c(3,2))
-plot(comb.suit, main="Full information")
+plot(comb.suit, main="")
 points(full.pres[,1:2], pch=16, cex=0.6, col=(full.pres$pa + 1))
-plot(comb.suit, main="Heterogenous sampling effort - Africa")
+Panel("(a)")
+plot(comb.suit, main="")
 points(hetero.pres[,1:2], pch=16, cex=0.6, col=(hetero.pres$pa + 1))
-plot(comb.suit, main="Heterogenous sampling effort - Kenya")
-points(hetero.pres[,1:2], pch=16, cex=0.6, col=(hetero.pres$pa + 1))
-plot(comb.suit, main="Missing covariates")
+Panel("(b)")
+plot(comb.suit, main="")
 points(missing.pres[,1:2], pch=16, cex=0.6, col=(missing.pres$pa + 1))
-plot(comb.suit, main="Control programme -\nKenya (Disease present) and Tanzania (Disease controlled)")
+Panel("(c)")
+plot(comb.suit, main="")
 points(control.pres[,1:2], pch=16, cex=0.6, col=(control.pres$pa + 1))
+Panel("(d)")
 par(oldpar)
 ```
 
@@ -561,11 +579,16 @@ By projecting the models onto data for the whole of Africa we can visually asses
 
 ```{r ProbabilityPres, fig.width=12, fig.height=12, echo=FALSE, fig.cap = "Predicted probability of disease presence across Africa for each of the modelling scenarios"}
 oldpar <- par(mfrow=c(3,2))
-plot(comb.suit, main="True disease distribution")
-plot(full.pred.map.comb, main="Full information")
-plot(hetero.pred.map.comb, main="Heterogenous sampling effort")
-plot(missing.pred.map.comb, main="Missing covariates")
-plot(control.pred.map.comb, main="Control programme")
+plot(comb.suit, main="")
+Panel("(a)")
+plot(full.pred.map.comb, main="")
+Panel("(b)")
+plot(hetero.pred.map.comb, main="")
+Panel("(c)")
+plot(missing.pred.map.comb, main="")
+Panel("(d)")
+plot(control.pred.map.comb, main="")
+Panel("(e)")
 par(oldpar)
 ```
 
@@ -673,7 +696,8 @@ for(i in 1:runs){
     control.pres.kenya <- control.pres.kenya[-c(sample(ab, length(ab)*0.6)),]
     control.pres.kenya <-control.pres.kenya[sample(c(1:length(control.pres.kenya[,1])), 150),]
     # Tanzania points set to 0 to simulate a successful control programme and combine data
-    control.pts.tanzania <- randomPoints(tanzania.bin, 1000)
+    control.pts.tanzania <- randomPoints(comb.suit, 1000)
+    control.pts.tanzania <-  control.pts.tanzania[-which(over(SpatialPoints(control.pts.tanzania, proj4string=CRS(proj4string(kenya))), kenya)$ACP == 1),]
     control.pres.tanzania<- cbind(control.pts.tanzania, pa = 0)
     control.pres.tanzania <- as.data.frame(control.pres.tanzania)
     ab <- which(control.pres.tanzania$pa == 0)
@@ -907,19 +931,7 @@ for(i in 1:runs){
 
 ```
 
-```{r plot.info, echo=FALSE,  include=FALSE}
-# Panel labelling function
-Panel <- function(panel)
-{
-  par(xpd=NA)
-  u <- par('usr')
-  text(u[1]-(u[2]-u[1])*.01, u[4]+(u[4]-u[3])*.1, panel, cex=2)
-  par(xpd=FALSE)
-}
 
-# Names for results plots
-plot.labs <- c("Full", "Hetero", "Missing", "Control")
-```
 
 Overall, the full model seems to perform the best in terms of the proportion of the study area predicted correct at the African extent (Figure 8a), for Kenya (Figure 9a) and for the combined Kenya and Tanzania extent (Figure 10a). Across Africa the missing covariates model performs better than might be expected in terms of proportion of the study area predicted correct (Figure 8a) but less well in terms of AUC score (Figure 8b). The full information model and the heterogenous sampling effort both have high AUC scores for the African extent (Figure 8b). The heterogenous sampling effort model also performs well at more limited extents with the full information model being noticeably less successful in Kenya (Figure 9b) and the combined Kenya extent where it is relatively low and Tanzania extent where it is highly variable (Figure 10b). At all extents the control measures model performs poorly in terms of AUC score and at the more limited extents the same is true for the missing covariate model. |The spreading disease model performs poorly across Africa (Figure 8) but considerably more successfully  across both Kenya (Figure 9) and the combined Kenya and Tanzania extent (Figure 10). 
 
